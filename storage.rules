@@ -1,23 +1,16 @@
 rules_version = '2';
 
-// Impact Bingo participants are intentionally UNAUTHENTICATED (nickname-only,
-// zero-friction classroom join). Their selfies must therefore be uploadable
-// without Firebase Auth — mirroring the activity's already-open Firestore
-// model (transactions: `allow create: if true`).
-//
-// Exposure is scoped tightly:
-//   • ONLY the /selfies/ path is writable — everything else is denied.
-//   • The client downscales selfies to a ~10–25 KB JPEG thumbnail before
-//     upload, so a 512 KB ceiling is huge headroom yet still blocks anyone
-//     trying to dump a real multi-MB file into the bucket.
-//   • Public read is required: getDownloadURL() + the facilitator dashboard
-//     render these images.
+// Impact Bingo participants are Passport users (email/password). Their selfies
+// require auth — matching the Firestore model which now gates participant writes
+// on isPasswordUser(). Read stays open so the facilitator dashboard and other
+// participants can render proof thumbnails via getDownloadURL().
 service firebase.storage {
   match /b/{bucket}/o {
 
     match /selfies/{fileName} {
       allow read: if true;
-      allow write: if request.resource.size < 512 * 1024
+      allow write: if request.auth != null
+                   && request.resource.size < 512 * 1024
                    && request.resource.contentType.matches('image/.*');
     }
 

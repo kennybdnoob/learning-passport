@@ -101,21 +101,23 @@ service cloud.firestore {
         allow write: if sessionOwner(sessionId);
       }
 
-      // Participants are identified by nickname only — no Firebase Auth
+      // Participants authenticated via Passport (email+password)
       match /users/{nick} {
         allow read: if true;
-        allow create, update: if true;
+        allow create, update: if isPasswordUser();
 
         match /done/{id} {
-          allow read, write: if true;
+          allow read: if true;
+          allow write: if isPasswordUser();
         }
       }
 
       match /transactions/{id} {
         allow read: if true;
-        allow create: if true;
+        allow create: if isPasswordUser();
         // Sellers may mark a transaction claimed (one-way: false → true, no other fields)
-        allow update: if request.resource.data.diff(resource.data).affectedKeys()
+        allow update: if isPasswordUser()
+                        && request.resource.data.diff(resource.data).affectedKeys()
                             .hasOnly(['claimed', 'claimedAt'])
                         && request.resource.data.claimed == true
                         && resource.data.claimed == false;
@@ -124,7 +126,7 @@ service cloud.firestore {
 
       match /reflections/{nick} {
         allow read: if sessionOwner(sessionId);
-        allow write: if true;
+        allow write: if isPasswordUser();
       }
     }
 

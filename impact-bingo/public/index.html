@@ -539,15 +539,29 @@ tr:last-child td { border-bottom: none; }
 <h1 class="page-title">Impact Bingo</h1>
 <div class="grid" id="grid"><div class="state-msg">Loading…</div></div>
 
-<div class="overlay open" id="oWelcome">
+<div class="overlay" id="oWelcome">
   <div class="modal">
-    <h2>Welcome 👋</h2>
-    <p>Enter your <strong style="color:var(--yellow)">Room Code</strong> and nickname to join the game and receive <strong style="color:var(--yellow)">1,000 starting points</strong>.</p>
-    <input type="text" id="inRoom" placeholder="Room Code (e.g. MAXIS26)" maxlength="20" style="text-transform:uppercase">
-    <input type="text" id="inNick" placeholder="Your Nickname" maxlength="30">
-    <div class="btn-row-single">
-      <button class="btn-buy" id="btnEnter" onclick="register()">Enter the Game</button>
+
+    <!-- Auth gate: shown when no Passport session detected -->
+    <div id="wGate">
+      <h2>Hold up! 🎫</h2>
+      <p>You need a <strong>Learning Passport</strong> to join Impact Bingo.</p>
+      <p>Your passport is your identity in the game — it links your name and your learning journey automatically.</p>
+      <div class="btn-row-single">
+        <button class="btn-buy" onclick="location.href='/passport'">Go to my Passport →</button>
+      </div>
     </div>
+
+    <!-- Room-code form: shown once signed in, name pre-filled from Passport -->
+    <div id="wForm" style="display:none">
+      <h2>Welcome 👋</h2>
+      <p id="wGreet">Enter your <strong style="color:var(--yellow)">Room Code</strong> to join the game and receive <strong style="color:var(--yellow)">1,000 starting points</strong>.</p>
+      <input type="text" id="inRoom" placeholder="Room Code (e.g. MAXIS26)" maxlength="20" style="text-transform:uppercase">
+      <div class="btn-row-single">
+        <button class="btn-buy" id="btnEnter" onclick="register()">Enter the Game</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -692,6 +706,8 @@ tr:last-child td { border-bottom: none; }
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, onAuthStateChanged }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore,collection,doc,getDoc,getDocs,addDoc,setDoc,updateDoc,deleteDoc,query,where,serverTimestamp,onSnapshot }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { getStorage,ref,uploadString,getDownloadURL }
@@ -709,6 +725,7 @@ const firebaseConfig = {
   measurementId:"G-C6WJYRYE1B"
 };
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 const fns = getFunctions(app, 'asia-southeast1');
@@ -728,46 +745,67 @@ function withTimeout(promise, ms, label) {
 }
 
 // STATE
+let currentUser=null;
 let nick='',balance=1000,history=[],gridData=[],doneIds=new Set();
 let activeId=null,activeCriteria='',activeTheme='';
 let selfie=null,sessionId=null,sessionData=null,completedLines=0;
 
-// BOOT
-async function boot() {
+// BOOT — waits for Firebase Auth, then resolves identity from Passport profile
+function boot() {
   document.getElementById('grid').innerHTML = '<div class="state-msg">Loading…</div>';
 
-  // Pre-fill room code after a reset (stored in sessionStorage by resetGame)
-  const rejoinRoom = sessionStorage.getItem('ib_rejoin_room');
-  if (rejoinRoom) {
-    document.getElementById('inRoom').value = rejoinRoom;
-    sessionStorage.removeItem('ib_rejoin_room');
-    document.getElementById('inNick').focus(); // put cursor straight on nickname
-  }
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      // Not signed in — show passport gate, hide room form
+      document.getElementById('wGate').style.display = '';
+      document.getElementById('wForm').style.display = 'none';
+      document.getElementById('oWelcome').classList.add('open');
+      return;
+    }
 
-  // Auto-restore session if it exists
-  const saved = localStorage.getItem('impact_bingo_session');
-  if (saved) {
+    currentUser = user;
+
+    // Resolve display name from Learner profile (source of truth)
     try {
-      const data = JSON.parse(saved);
-      if (data.room && data.nick) {
-        document.getElementById('inRoom').value = data.room;
-        document.getElementById('inNick').value = data.nick;
-        // Auto-trigger registration after a brief delay to let DOM settle
-        setTimeout(() => register(), 150);
+      const learnerSnap = await getDoc(doc(db, 'learners', user.uid));
+      if (learnerSnap.exists()) {
+        nick = (learnerSnap.data().displayName || user.displayName || user.email || 'PLAYER').toUpperCase();
+      } else {
+        nick = (user.displayName || user.email || 'PLAYER').toUpperCase();
       }
     } catch(e) {
-      console.error("Failed to restore session", e);
+      nick = (user.displayName || user.email || 'PLAYER').toUpperCase();
     }
-  }
+
+    // Show the room-code form with a personalised greeting
+    document.getElementById('wGate').style.display = 'none';
+    document.getElementById('wForm').style.display = '';
+    document.getElementById('wGreet').innerHTML =
+      `Hi, <strong style="color:var(--yellow)">${esc(nick)}</strong>! Enter your room code to join and receive <strong style="color:var(--yellow)">1,000 starting points</strong>.`;
+
+    // Pre-fill room code: URL ?code= param takes priority, then post-reset sessionStorage
+    const urlCode = new URLSearchParams(location.search).get('code');
+    const rejoinRoom = sessionStorage.getItem('ib_rejoin_room');
+    if (rejoinRoom) sessionStorage.removeItem('ib_rejoin_room');
+    const roomCode = urlCode || rejoinRoom || '';
+
+    if (roomCode) {
+      document.getElementById('inRoom').value = roomCode.toUpperCase();
+      // Auto-join — DOM must settle first
+      setTimeout(() => register(), 150);
+    } else {
+      document.getElementById('oWelcome').classList.add('open');
+      document.getElementById('inRoom').focus();
+    }
+  });
 }
 boot();
 
-// REGISTER
+// REGISTER — nick is already resolved from the Passport profile in boot()
 window.register = async function() {
   const roomRaw = document.getElementById('inRoom').value.trim().toUpperCase();
-  const nickRaw = document.getElementById('inNick').value.trim().toUpperCase();
   if (!roomRaw) { toast('Enter a room code','err'); return; }
-  if (!nickRaw) { toast('Enter a nickname','err'); return; }
+  if (!nick) { toast('Sign in to your Learning Passport first','err'); return; }
 
   const btn = document.getElementById('btnEnter');
   btn.disabled=true; btn.textContent='Joining…';
@@ -776,20 +814,18 @@ window.register = async function() {
     // Find session by room code
     const q = query(collection(db,'sessions'), where('roomCode','==',roomRaw), where('status','==','active'));
     const snap = await getDocs(q);
-    if (snap.empty) { 
-      toast('Room code not found or session not active','err'); 
-      btn.disabled=false; 
-      btn.textContent='Enter the Game'; 
-      localStorage.removeItem('impact_bingo_session'); // Auto-clear dead sessions
-      return; 
+    if (snap.empty) {
+      toast('Room code not found or session not active','err');
+      btn.disabled=false;
+      btn.textContent='Enter the Game';
+      return;
     }
 
     const sessionDoc = snap.docs[0];
     sessionId = sessionDoc.id;
     sessionData = sessionDoc.data();
-    nick = nickRaw;
 
-    // Check duplicate nickname
+    // Check for existing session doc (returning player)
     const uRef = doc(db,'sessions',sessionId,'users',nick);
     const uSnap = await getDoc(uRef);
 
@@ -800,13 +836,10 @@ window.register = async function() {
       doneSnap.forEach(d => { doneIds.add(Number(d.id)); });
       toast(`Welcome back, ${nick}!`,'ok');
     } else {
-      await setDoc(uRef, { balance:1000, joinedAt:serverTimestamp() });
+      await setDoc(uRef, { balance:1000, joinedAt:serverTimestamp(), uid: currentUser?.uid || '' });
       balance = 1000;
       toast(`Welcome, ${nick}! You have 1,000 points`,'ok');
     }
-
-    // Save to local storage upon successful entry
-    localStorage.setItem('impact_bingo_session', JSON.stringify({ room: roomRaw, nick: nickRaw }));
 
     // Load criteria
     const critSnap = await getDocs(collection(db,'sessions',sessionId,'criteria'));
@@ -817,10 +850,9 @@ window.register = async function() {
 
     // Restore done cards
     if (doneIds.size > 0) {
-      const doneSnap = await getDocs(collection(db,'sessions',sessionId,'users',nick,'done'));
-      doneSnap.forEach(d => { restoreCard(Number(d.id), d.data().selfieUrl); });
+      const doneSnap2 = await getDocs(collection(db,'sessions',sessionId,'users',nick,'done'));
+      doneSnap2.forEach(d => { restoreCard(Number(d.id), d.data().selfieUrl); });
       checkLines(size);
-      // Re-unlock reflection button if board was already complete
       if (doneIds.size === gridData.length) {
         setBoardComplete();
       }
@@ -830,14 +862,11 @@ window.register = async function() {
     if(sessionData.phase === 'lobby' || sessionData.status === 'active') {
       document.getElementById('oWelcome').classList.remove('open');
       if(sessionData.phase === 'lobby') {
-        // Show lobby waiting screen
         document.getElementById('lobbyNick').textContent = nick;
         document.getElementById('lobbyRoom').textContent = roomRaw;
         document.getElementById('oLobby').classList.add('open');
-        // Poll for game start
         pollForStart();
       } else {
-        // Game already active — go straight in
         document.getElementById('hdr').style.display='flex';
         document.getElementById('hdrPlayer').textContent=`Player: ${nick}`;
         updateBalance();
@@ -905,14 +934,9 @@ async function validateSellPartner(partnerNick) {
   } catch(e) { return false; }
 }
 
-// RESET — wipes Firestore data + localStorage, returns to join screen
+// RESET — wipes Firestore data, returns to the room-code join screen
 window.resetGame = async function() {
   if (!confirm("Reset your progress? Your balance, completed squares, and score will be wiped. You'll start fresh with 1,000 points.")) return;
-
-  // Grab room code before clearing, so we can pre-fill the join screen
-  const saved = localStorage.getItem('impact_bingo_session');
-  let roomCode = null;
-  try { roomCode = saved ? JSON.parse(saved).room : null; } catch(e) {}
 
   try {
     if (sessionId && nick) {
@@ -928,9 +952,9 @@ window.resetGame = async function() {
     console.error('Reset error:', e);
   }
 
-  localStorage.removeItem('impact_bingo_session');
-  // Temporarily store room code so the join screen can pre-fill it
-  if (roomCode) sessionStorage.setItem('ib_rejoin_room', roomCode);
+  // Store room code so the join screen can pre-fill it after reload
+  const roomCode = sessionData?.roomCode || document.getElementById('inRoom')?.value || '';
+  if (roomCode) sessionStorage.setItem('ib_rejoin_room', roomCode.toUpperCase());
   window.location.reload();
 };
 

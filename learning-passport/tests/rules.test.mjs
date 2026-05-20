@@ -255,11 +255,43 @@ await check('CANNOT upload into another user’s selfie folder', assertFails(
 await check('unauthenticated CANNOT write passport-selfies', assertFails(
   uploadString(sref(env.unauthenticatedContext().storage(), `passport-selfies/${UID_A}/x.jpg`), PNG, 'data_url')));
 
-await check('regression: Impact Bingo selfies/ stays unauthenticated-writable', assertSucceeds(
+await check('Impact Bingo selfies/ requires auth (Passport integration)', assertSucceeds(
+  uploadString(sref(pwStore(UID_A), 'selfies/ib_demo.jpg'), PNG, 'data_url')));
+
+await check('unauthenticated CANNOT write Impact Bingo selfies', assertFails(
   uploadString(sref(env.unauthenticatedContext().storage(), 'selfies/ib_demo.jpg'), PNG, 'data_url')));
 
+// ── IMPACT BINGO: auth-gated writes (Passport integration) ──────────────────
+await env.withSecurityRulesDisabled(async (ctx) => {
+  const db = ctx.firestore();
+  await setDoc(doc(db, 'sessions', 'sess1'), {
+    roomCode: 'TEST01', status: 'active', facilitatorId: 'fac1',
+  });
+});
+
+await check('IB participant (pw user) CAN create user doc in session', assertSucceeds(
+  setDoc(doc(pw(env, UID_A), 'sessions', 'sess1', 'users', 'AISHA'), {
+    balance: 1000, joinedAt: new Date(), uid: UID_A,
+  })));
+
+await check('unauthenticated CANNOT join an IB session', assertFails(
+  setDoc(doc(env.unauthenticatedContext().firestore(), 'sessions', 'sess1', 'users', 'HACKER'), {
+    balance: 1000,
+  })));
+
+await check('IB participant CAN create a transaction', assertSucceeds(
+  setDoc(doc(pw(env, UID_A), 'sessions', 'sess1', 'transactions', 'tx1'), {
+    action: 'BUY', boxId: 1, buyer: 'AISHA', seller: 'SAM',
+    amount: 100, claimed: false, selfieUrl: 'https://x.com/img.jpg',
+  })));
+
+await check('unauthenticated CANNOT create a transaction', assertFails(
+  setDoc(doc(env.unauthenticatedContext().firestore(), 'sessions', 'sess1', 'transactions', 'tx2'), {
+    action: 'BUY', boxId: 2, buyer: 'HACK', seller: 'BOB', amount: 100, claimed: false,
+  })));
+
 await env.cleanup();
-// Expected: 44 passed, 0 failed
+// Expected: 49 passed, 0 failed
 console.log(`\n${passed} passed, ${failed} failed\n`);
 // Windows + the Firebase SDK keep emulator sockets open for a tick; calling
 // process.exit() immediately races libuv handle-closing and aborts with a
