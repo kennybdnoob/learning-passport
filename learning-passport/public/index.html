@@ -346,7 +346,26 @@ if (LOCAL) {
 }
 
 const $ = id => document.getElementById(id);
-const show = s => document.querySelectorAll('.screen').forEach(el => el.classList.toggle('active', el.id === s));
+// Sections that should push to browser history so the phone back button
+// navigates within the app instead of leaving the page entirely.
+const HISTORY_SECTIONS = new Set([
+  's-pass','s-jlist','s-journal','s-report',
+  's-resources','s-activities','s-leaderboard','s-rewards','s-settings',
+]);
+const show = s => {
+  document.querySelectorAll('.screen').forEach(el => el.classList.toggle('active', el.id === s));
+  if (HISTORY_SECTIONS.has(s) && history.state?.section !== s) {
+    history.pushState({ section: s }, '', location.pathname);
+  }
+};
+// Handle phone back button — pop back to whichever section was showing
+window.addEventListener('popstate', e => {
+  const s = e.state?.section;
+  if (s) {
+    // Just swap the visible screen; don't push again (we're already popping)
+    document.querySelectorAll('.screen').forEach(el => el.classList.toggle('active', el.id === s));
+  }
+});
 const initials = n => (n||'').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase() || '··';
 const hash = s => { let h=0; for (let i=0;i<s.length;i++) h=(h<<5)-h+s.charCodeAt(i)|0; return h; };
 document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => {
@@ -767,13 +786,13 @@ async function openLeaderboard(){
 function resourceOpenUrl(rawUrl) {
   if (!rawUrl) return null;
   const u = rawUrl.toLowerCase().split('?')[0]; // strip query string for extension check
-  // These types render natively in the browser — open directly
-  const direct = ['.jpg','.jpeg','.png','.gif','.webp','.svg',
-                  '.mp4','.webm','.mov','.ogg','.mp3','.wav',
-                  '.html','.htm'];
-  if (direct.some(ext => u.endsWith(ext))) return rawUrl;
-  // Office docs, PDFs, etc. → Google Docs Viewer (opens as readable preview)
-  return `https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}&embedded=false`;
+  // Only Office docs need Google Docs Viewer — browsers can't render them natively.
+  // Everything else (plain URLs, PDFs, images, video, HTML…) opens directly.
+  const needsViewer = ['.doc','.docx','.xls','.xlsx','.ppt','.pptx'];
+  if (needsViewer.some(ext => u.endsWith(ext))) {
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}&embedded=false`;
+  }
+  return rawUrl;
 }
 
 function resourceIcon(rawUrl) {
