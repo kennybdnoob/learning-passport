@@ -8,7 +8,6 @@ if (getApps().length === 0) {
 export { syncRole } from './auth/syncRole';
 
 // Activity functions
-export { generateSummary } from './activities/reflectiveJournal/generateSummary';
 export { generateIBSummary } from './activities/impactBingo/generateSummary';
 
 // Learning Passport

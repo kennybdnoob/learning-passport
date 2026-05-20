@@ -13,15 +13,14 @@
   },
   "hosting": {
     "public": "public",
+    "redirects": [
+      {
+        "source": "/",
+        "destination": "/passport",
+        "type": 301
+      }
+    ],
     "rewrites": [
-      {
-        "source": "/facilitator",
-        "destination": "/facilitator/index.html"
-      },
-      {
-        "source": "/facilitator/**",
-        "destination": "/facilitator/index.html"
-      },
       {
         "source": "/impactbingo/facilitator",
         "destination": "/impactbingo/facilitator/index.html"
@@ -45,22 +44,6 @@
       {
         "source": "/impactbingo/**",
         "destination": "/impactbingo/index.html"
-      },
-      {
-        "source": "/reflectivejournal/facilitator",
-        "destination": "/reflectivejournal/facilitator/index.html"
-      },
-      {
-        "source": "/reflectivejournal/facilitator/**",
-        "destination": "/reflectivejournal/facilitator/index.html"
-      },
-      {
-        "source": "/reflectivejournal",
-        "destination": "/reflectivejournal/index.html"
-      },
-      {
-        "source": "/reflectivejournal/**",
-        "destination": "/reflectivejournal/index.html"
       },
       {
         "source": "/passport/facilitator",
