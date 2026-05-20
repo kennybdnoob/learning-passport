@@ -13,8 +13,8 @@ export const sendPassportReminders = onCall(
   { region: 'asia-southeast1', secrets: ['RESEND_API_KEY'] },
   async (request) => {
     if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
-    if (!['facilitator', 'admin'].includes(request.auth.token.role as string)
-        && request.auth.token.email !== 'aknyz88@gmail.com') {
+    const role = request.auth.token.role as string;
+    if (!['facilitator', 'admin'].includes(role)) {
       throw new HttpsError('permission-denied', 'Facilitator access required');
     }
 
@@ -28,8 +28,7 @@ export const sendPassportReminders = onCall(
     const courseSnap = await db.doc(`courses/${courseId}`).get();
     if (!courseSnap.exists) throw new HttpsError('not-found', 'Course not found');
     const course = courseSnap.data()!;
-    if (course.facilitatorId !== request.auth.uid
-        && request.auth.token.email !== 'aknyz88@gmail.com') {
+    if (course.facilitatorId !== request.auth.uid && role !== 'admin') {
       throw new HttpsError('permission-denied', 'Not your course');
     }
 
