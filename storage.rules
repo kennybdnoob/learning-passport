@@ -28,12 +28,13 @@ service firebase.storage {
 
     // Learning Passport resource files. Facilitators upload PDFs, slides, etc.
     // Participants (and facilitators) read them. 10 MB ceiling; any file type.
+    // Write gate: Google sign-in = facilitator; email/password = participant.
+    // Using sign_in_provider avoids depending on a custom role claim that
+    // requires syncRole to have fired and the token to have refreshed.
     match /passport-resources/{courseCode}/{allPaths=**} {
       allow read: if request.auth != null;
       allow write: if request.auth != null
-                   && (request.auth.token.role == 'facilitator'
-                       || request.auth.token.role == 'admin'
-                       || request.auth.token.email == 'aknyz88@gmail.com')
+                   && request.auth.token.firebase.sign_in_provider == 'google.com'
                    && request.resource.size < 10 * 1024 * 1024;
     }
 
