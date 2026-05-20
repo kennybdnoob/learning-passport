@@ -347,7 +347,10 @@ const $ = id => document.getElementById(id);
 const show = s => document.querySelectorAll('.screen').forEach(el => el.classList.toggle('active', el.id === s));
 const initials = n => (n||'').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase() || '··';
 const hash = s => { let h=0; for (let i=0;i<s.length;i++) h=(h<<5)-h+s.charCodeAt(i)|0; return h; };
-document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => show(b.dataset.go)));
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => {
+  if (b.dataset.go === 's-shelf') { clearNav(); sessionStorage.removeItem('lp_sec'); }
+  show(b.dataset.go);
+}));
 
 let S = { uid:null, learner:null, passport:null, course:null };
 
@@ -378,13 +381,33 @@ $('forgotLink').addEventListener('click', async () => {
   } catch(e) { m.className='msg err'; m.textContent=e.message||'Could not send reset email.'; }
 });
 
+// ── NAV STATE — survive refresh ──
+// Saves the current passport + section to sessionStorage so a page refresh
+// drops the participant back where they were, not at the passport shelf.
+function saveNav(section) {
+  if (S.passport) sessionStorage.setItem('lp_pid', S.passport.passportId);
+  if (section)    sessionStorage.setItem('lp_sec', section);
+}
+function clearNav() {
+  sessionStorage.removeItem('lp_pid');
+  sessionStorage.removeItem('lp_sec');
+}
+
 onAuthStateChanged(auth, async u => {
-  if (!u) { S={uid:null}; show('s-auth'); $('authBtn').disabled=false; return; }
+  if (!u) { S={uid:null}; clearNav(); show('s-auth'); $('authBtn').disabled=false; return; }
   S.uid = u.uid;
   const ls = await getDoc(doc(db,'learners',u.uid));
   S.learner = ls.exists() ? ls.data() : null;
   if (!S.learner || !S.learner.displayName) { paintSelfieRing(); show('s-profile'); return; }
-  await renderShelf();
+
+  // Restore last passport + section after a refresh
+  const savedPid = sessionStorage.getItem('lp_pid');
+  const savedSec = sessionStorage.getItem('lp_sec');
+  if (savedPid) {
+    await openPassport(savedPid, savedSec);
+  } else {
+    await renderShelf();
+  }
 });
 
 // ── PROFILE ──
@@ -463,7 +486,7 @@ $('addCard').addEventListener('click',()=>{
   $('addName').value=S.learner.displayName; $('addPos').value=S.learner.position||'';
   $('addCode').value=''; $('addMsg').textContent=''; $('addBtn').disabled=false; show('s-add');
 });
-$('shelfSignOut').addEventListener('click',()=>signOut(auth));
+$('shelfSignOut').addEventListener('click',()=>{ clearNav(); signOut(auth); });
 
 // ── ADD PASSPORT ──
 $('addBtn').addEventListener('click', async () => {
@@ -502,16 +525,17 @@ $('addBtn').addEventListener('click', async () => {
 // ── PASSPORT HOME ──
 let _courseUnsub = null; // cancel previous course listener when switching passports
 
-async function openPassport(pid){
+async function openPassport(pid, restoreSection){
   const ps = await getDoc(doc(db,'passports',pid));
-  if (!ps.exists()) { await renderShelf(); return; }
+  if (!ps.exists()) { clearNav(); await renderShelf(); return; }
   S.passport = ps.data();
+  saveNav(); // persist pid so refresh brings them back here
 
   // Cancel any previous course listener before starting a new one
   if (_courseUnsub) { _courseUnsub(); _courseUnsub = null; }
 
-  // Initial load — show passport home immediately, then keep listening for
-  // facilitator pushes (live questions, resources, activities, rewards)
+  // Initial load — show passport home immediately (or restored section), then
+  // keep listening for facilitator pushes (live questions, resources, etc.)
   let firstLoad = true;
   _courseUnsub = onSnapshot(doc(db,'courses',S.passport.courseId), async (cs) => {
     const prevLiveCount = Array.isArray(S.course?.journalQuestions)
@@ -531,7 +555,13 @@ async function openPassport(pid){
       $('pcScore').textContent='★ '+(p.score||0)+' pts';
       const prog = await journalProgress();
       buildGrid((c.featureFlags)||{journal:true}, prog);
-      show('s-pass');
+      // Restore last section if we're coming back from a refresh
+      if (restoreSection === 's-resources')   { openResources(); }
+      else if (restoreSection === 's-activities') { openActivities(); }
+      else if (restoreSection === 's-rewards')    { openRewards(); }
+      else if (restoreSection === 's-leaderboard'){ openLeaderboard(); }
+      else if (restoreSection === 's-jlist')      { openJournalList(); }
+      else { show('s-pass'); }
     } else {
       // Facilitator pushed an update — silently refresh S.course and notify
       const newLiveCount = Array.isArray(S.course.journalQuestions)
@@ -600,6 +630,7 @@ function buildGrid(flags, prog){
 
 // ── JOURNAL (multi-question) ──
 async function openJournalList(){
+  saveNav('s-jlist');
   const qs=getQuestions(), pid=S.passport.passportId;
   if (!qs.length){
     $('jlSub').textContent = 'No questions available yet.';
@@ -698,6 +729,7 @@ $('repBtn').addEventListener('click', async () => {
 });
 // ── LEADERBOARD ──
 async function openLeaderboard(){
+  saveNav('s-leaderboard');
   $('lbCohort').textContent = S.passport.cohortName || S.passport.courseName || 'Your cohort';
   const list=$('lbList'), note=$('lbNote');
   list.innerHTML='<p class="sub">Loading…</p>'; note.textContent='';
@@ -726,9 +758,36 @@ async function openLeaderboard(){
 }
 
 // ── RESOURCES ──
+// Returns a URL that opens the file in a browser tab rather than downloading.
+// Office docs and PDFs go through Google Docs Viewer so they render inline.
+// Images and videos open directly (browsers handle them natively).
+function resourceOpenUrl(rawUrl) {
+  if (!rawUrl) return null;
+  const u = rawUrl.toLowerCase().split('?')[0]; // strip query string for extension check
+  const direct = ['.jpg','.jpeg','.png','.gif','.webp','.svg',
+                  '.mp4','.webm','.mov','.ogg','.mp3','.wav'];
+  if (direct.some(ext => u.endsWith(ext))) return rawUrl;
+  // Everything else (pdf, docx, xlsx, pptx, txt…) → Google Docs Viewer
+  return `https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}&embedded=false`;
+}
+
+function resourceIcon(rawUrl) {
+  if (!rawUrl) return '📚';
+  const u = (rawUrl.toLowerCase().split('?')[0]);
+  if (['.jpg','.jpeg','.png','.gif','.webp','.svg'].some(e => u.endsWith(e))) return '🖼️';
+  if (['.mp4','.webm','.mov','.ogg'].some(e => u.endsWith(e))) return '🎬';
+  if (['.mp3','.wav'].some(e => u.endsWith(e))) return '🎵';
+  if (u.endsWith('.pdf')) return '📄';
+  if (['.doc','.docx'].some(e => u.endsWith(e))) return '📝';
+  if (['.xls','.xlsx'].some(e => u.endsWith(e))) return '📊';
+  if (['.ppt','.pptx'].some(e => u.endsWith(e))) return '📋';
+  return '📚';
+}
+
 function openResources(){
   const resources = ((S.course && S.course.resources) || []).filter(r => r.live !== false);
   show('s-resources');
+  saveNav();
   const list = $('resList');
   if (!resources.length){
     list.innerHTML = '<div class="empty">No resources available yet — check back during the workshop.</div>';
@@ -738,16 +797,19 @@ function openResources(){
   resources.forEach(r => {
     const el = document.createElement('div');
     el.className = 'act-card';
+    const openUrl = resourceOpenUrl(r.url);
+    const ic = resourceIcon(r.url);
     el.innerHTML = `<div class="act-top">
-      <div class="act-ic">📚</div>
+      <div class="act-ic">${ic}</div>
       <div class="act-info"><b>${r.name}</b><span>${r.description || ''}</span></div>
-    </div>${r.url ? `<a class="act-link" href="${r.url}" target="_blank" rel="noopener">Open resource →</a>` : ''}`;
+    </div>${openUrl ? `<a class="act-link" href="${openUrl}" target="_blank" rel="noopener">Open →</a>` : ''}`;
     list.appendChild(el);
   });
 }
 
 // ── ACTIVITIES ──
 function openActivities(){
+  saveNav('s-activities');
   const links = ((S.course && S.course.activityLinks) || []).filter(a => a.live !== false);
   show('s-activities');
   const list = $('actList');
@@ -771,6 +833,7 @@ function openActivities(){
 
 // ── REWARDS ──
 async function openRewards(){
+  saveNav('s-rewards');
   const rewards = ((S.course && S.course.rewards) || []).filter(r => r.live !== false);
   const pid = S.passport.passportId;
   $('rwScore').textContent = '★ ' + (S.passport.score || 0) + ' pts available';
