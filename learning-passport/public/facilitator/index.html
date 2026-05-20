@@ -814,7 +814,7 @@ function buildMgrActivities(container, code, items){
           <span class="act-tog-track"><span class="act-tog-thumb"></span></span>
           <span class="act-tog-lbl">${isLive ? 'Live' : 'Off'}</span>
         </label>
-        <a class="act-manage-link" href="${act.facilitatorUrl}" target="_blank" rel="noopener">
+        <a class="act-manage-link" href="${act.facilitatorUrl}?course=${encodeURIComponent(code)}" target="_blank" rel="noopener">
           Manage game →
         </a>
       </div>`;

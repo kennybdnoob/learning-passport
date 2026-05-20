@@ -542,14 +542,24 @@ tr:last-child td { border-bottom: none; }
 <div class="overlay" id="oWelcome">
   <div class="modal">
 
+    <!-- Loading: shown while Firebase resolves auth from storage -->
+    <div id="wLoading" style="text-align:center;padding:8px 0">
+      <div style="font-size:2.5rem;margin-bottom:12px">⏳</div>
+      <h2 style="font-size:1.4rem">Checking your passport…</h2>
+      <p style="color:#888;font-size:.9rem;margin-top:8px">Just a moment</p>
+    </div>
+
     <!-- Auth gate: shown when no Passport session detected -->
-    <div id="wGate">
+    <div id="wGate" style="display:none">
       <h2>Hold up! 🎫</h2>
       <p>You need a <strong>Learning Passport</strong> to join Impact Bingo.</p>
       <p>Your passport is your identity in the game — it links your name and your learning journey automatically.</p>
       <div class="btn-row-single">
         <button class="btn-buy" onclick="location.href='/passport'">Go to my Passport →</button>
       </div>
+      <p style="margin-top:16px;font-size:.85rem;color:#888;text-align:center">
+        Already signed in? <a href="" onclick="location.reload();return false" style="color:inherit;font-weight:700">Refresh</a>
+      </p>
     </div>
 
     <!-- Room-code form: shown once signed in, name pre-filled from Passport -->
@@ -754,12 +764,21 @@ let selfie=null,sessionId=null,sessionData=null,completedLines=0;
 function boot() {
   document.getElementById('grid').innerHTML = '<div class="state-msg">Loading…</div>';
 
+  // Show loading overlay immediately — Firebase reads auth from IndexedDB
+  // asynchronously and can take a beat on mobile/new tabs. Without this,
+  // the gate would flash before auth resolves and confuse signed-in users.
+  document.getElementById('oWelcome').classList.add('open');
+  document.getElementById('wLoading').style.display = '';
+  document.getElementById('wGate').style.display = 'none';
+  document.getElementById('wForm').style.display = 'none';
+
   onAuthStateChanged(auth, async (user) => {
+    // Auth is now definitive — hide loading spinner before showing anything
+    document.getElementById('wLoading').style.display = 'none';
+
     if (!user) {
-      // Not signed in — show passport gate, hide room form
+      // Not signed in — show gate with refresh hint
       document.getElementById('wGate').style.display = '';
-      document.getElementById('wForm').style.display = 'none';
-      document.getElementById('oWelcome').classList.add('open');
       return;
     }
 
@@ -791,10 +810,10 @@ function boot() {
 
     if (roomCode) {
       document.getElementById('inRoom').value = roomCode.toUpperCase();
-      // Auto-join — DOM must settle first
+      // Keep modal open while register() runs — register() closes it on success
       setTimeout(() => register(), 150);
     } else {
-      document.getElementById('oWelcome').classList.add('open');
+      // No code — show the room-code form for manual entry
       document.getElementById('inRoom').focus();
     }
   });

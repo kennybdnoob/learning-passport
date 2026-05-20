@@ -576,6 +576,16 @@ onAuthStateChanged(auth,async user=>{
   loadSessions();
   initCriteriaRows();
   renderReflectionPicker();
+
+  // If launched from the Learning Passport "Manage game →" link, the course
+  // code is passed as ?course=XXXX. Pre-fill the room code and open Create tab.
+  const passportCourse = new URLSearchParams(location.search).get('course');
+  if (passportCourse) {
+    document.getElementById('fCode').value = passportCourse.toUpperCase();
+    switchTab('Create');
+    // Clean the URL so refreshing doesn't keep the param
+    history.replaceState({}, '', location.pathname);
+  }
 });
 
 window.signOut=async function(){
