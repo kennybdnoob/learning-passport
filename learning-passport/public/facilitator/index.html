@@ -625,6 +625,27 @@ function buildMgrJournal(container, code, items){
   container.appendChild(sec);
 }
 
+// Allowed upload extensions for resources.
+// Block ZIP, EXE, scripts, archives, and any other executables.
+const ALLOWED_EXTS = new Set([
+  // Documents
+  'pdf','doc','docx','ppt','pptx','xls','xlsx','txt','csv',
+  // Images
+  'jpg','jpeg','png','gif','webp','svg',
+  // Video
+  'mp4','webm','mov',
+  // Audio
+  'mp3','wav',
+  // Web
+  'html','htm',
+]);
+const ALLOWED_ACCEPT = [
+  '.pdf','.doc','.docx','.ppt','.pptx','.xls','.xlsx','.txt','.csv',
+  '.jpg','.jpeg','.png','.gif','.webp','.svg',
+  '.mp4','.webm','.mov','.mp3','.wav','.html','.htm',
+].join(',');
+const ALLOWED_HINT = 'PDF · Word · PowerPoint · Excel · TXT · CSV · Images · Video · Audio · HTML';
+
 // ── Resources (with file upload) ──
 function buildMgrResources(container, code, items){
   const sec=mkMgrSec('📚 Resources','— links or files participants can open','Resources');
@@ -649,7 +670,10 @@ function buildMgrResources(container, code, items){
         <div class="url-row">
           <input class="rs-url" placeholder="URL — or upload a file →" value="${escA(r.url)}">
           <button type="button" class="upload-btn" title="Upload a file to Storage">📎 Upload</button>
-          <input type="file" class="rs-file-input" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4,.mov" style="display:none">
+          <input type="file" class="rs-file-input" accept="${ALLOWED_ACCEPT}" style="display:none">
+        </div>
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;line-height:1.5">
+          Allowed: ${ALLOWED_HINT}
         </div>`;
       row.querySelector('.rm').addEventListener('click',()=>render(collectRs().filter((_,j)=>j!==i)));
       attachLiveToggle(row);
@@ -660,6 +684,13 @@ function buildMgrResources(container, code, items){
       uploadBtn.addEventListener('click',()=>fileInput.click());
       fileInput.addEventListener('change',async e=>{
         const file=e.target.files[0]; if (!file) return;
+        // Validate extension against the allow-list (defence against the browser
+        // accept attribute being bypassed or ignored on some mobile browsers)
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!ALLOWED_EXTS.has(ext)) {
+          alert(`"${file.name}" is not an allowed file type.\n\nAllowed: ${ALLOWED_HINT}`);
+          e.target.value=''; return;
+        }
         uploadBtn.disabled=true; uploadBtn.textContent='Uploading…';
         try {
           const storageRef=sref(storage,`passport-resources/${code}/${rowId}/${file.name}`);
