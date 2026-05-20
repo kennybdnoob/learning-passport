@@ -1,0 +1,294 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── helpers ──────────────────────────────────────────────────────────────
+
+    function isGoogle() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == "google.com";
+    }
+
+    function isAnon() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == "anonymous";
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Role helpers — check custom claims set by syncRole Cloud Function
+    function hasRole(role) {
+      return request.auth != null && request.auth.token.role == role;
+    }
+
+    // Bootstrap admin — matched on the email claim, which is a STANDARD JWT
+    // claim present the instant a user signs in (no syncRole / token-cache
+    // delay). This is the recovery path so the platform owner can never be
+    // locked out, and is the ONLY identity that bypasses the role claim.
+    function isBootstrapAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'aknyz88@gmail.com';
+    }
+
+    function isFacilitator() {
+      // Role claim (set by syncRole function) is the primary check.
+      // isBootstrapAdmin is a single-email recovery path — NOT "any Google user".
+      return hasRole('facilitator') || hasRole('admin') || isBootstrapAdmin();
+    }
+
+    function isAdmin() {
+      return hasRole('admin') || isBootstrapAdmin();
+    }
+
+    // Learning Passport participants authenticate with email + password.
+    // This is the ONLY learner identity (the nickname/anonymous model is not
+    // used by the Passport). Score integrity does NOT rest on this — it rests
+    // on score being unwritable by clients (see /passports rules below).
+    function isPasswordUser() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'password';
+    }
+
+    function workshopOwner(workshopId) {
+      return isFacilitator()
+        && get(/databases/$(database)/documents/workshops/$(workshopId)).data.facilitatorId == request.auth.uid;
+    }
+
+    function sessionOwner(sessionId) {
+      return isFacilitator()
+        && get(/databases/$(database)/documents/sessions/$(sessionId)).data.facilitatorId == request.auth.uid;
+    }
+
+    // ─── platform: user profiles ─────────────────────────────────────────────
+    // Owner can read their own doc and write non-role fields.
+    // Only admin can write the `role` field (prevents self-promotion).
+    // syncRole function propagates role → Auth custom claims automatically.
+
+    match /users/{uid} {
+      allow read: if isAuthenticated() && request.auth.uid == uid;
+
+      // Owner can write their own doc — but NOT the role field
+      allow write: if isGoogle()
+        && request.auth.uid == uid
+        && !('role' in request.resource.data.diff(resource.data).affectedKeys());
+
+      // Admin can write anything, including role promotion/demotion
+      allow write: if isAdmin();
+    }
+
+    // ─── impact-bingo: facilitator records ────────────────────────────────────
+
+    match /facilitators/{uid} {
+      allow read, write: if isGoogle() && request.auth.uid == uid;
+      allow read: if isGoogle(); // admin tab reads all facilitators
+    }
+
+    // ─── impact-bingo: sessions ───────────────────────────────────────────────
+
+    match /sessions/{sessionId} {
+      // Open read — participants query by roomCode without auth
+      allow read: if true;
+      // Only a facilitator/admin who owns the session can create / update / delete
+      allow create: if isFacilitator()
+        && request.resource.data.facilitatorId == request.auth.uid;
+      allow update, delete: if isFacilitator()
+        && resource.data.facilitatorId == request.auth.uid;
+
+      match /criteria/{id} {
+        allow read: if true;
+        allow write: if sessionOwner(sessionId);
+      }
+
+      // Participants are identified by nickname only — no Firebase Auth
+      match /users/{nick} {
+        allow read: if true;
+        allow create, update: if true;
+
+        match /done/{id} {
+          allow read, write: if true;
+        }
+      }
+
+      match /transactions/{id} {
+        allow read: if true;
+        allow create: if true;
+        // Sellers may mark a transaction claimed (one-way: false → true, no other fields)
+        allow update: if request.resource.data.diff(resource.data).affectedKeys()
+                            .hasOnly(['claimed', 'claimedAt'])
+                        && request.resource.data.claimed == true
+                        && resource.data.claimed == false;
+        allow delete: if false;
+      }
+
+      match /reflections/{nick} {
+        allow read: if sessionOwner(sessionId);
+        allow write: if true;
+      }
+    }
+
+    // ─── reflective-journal: workshops ───────────────────────────────────────
+
+    match /workshops/{workshopId} {
+      allow create: if isFacilitator()
+        && request.resource.data.facilitatorId == request.auth.uid;
+      // Mutations stay owner-only — the sensitive part.
+      allow update, delete: if isFacilitator()
+        && resource.data.facilitatorId == request.auth.uid;
+      // Workshops are intentionally discoverable by join code: anonymous
+      // participants already read the whole collection to join. Allowing any
+      // signed-in user to read it too (a) adds no new exposure and (b) lets
+      // the facilitator's create-time code-uniqueness query succeed (a query
+      // scoped only by `code` can't satisfy an owner-only read rule).
+      allow read: if isAuthenticated();
+
+      match /activities/{activityId} {
+        // Facilitator (owner) has full control over every row in any state.
+        allow read, write, delete: if workshopOwner(workshopId);
+        // Participants only ever see rows the facilitator has released.
+        // draft/confirmed rows are invisible at the DB layer, not just the UI.
+        // Participant queries MUST filter by state in ['live','complete'].
+        allow read: if isAnon()
+          && (resource.data.state == 'live' || resource.data.state == 'complete');
+      }
+
+      // Identity within a workshop is the (normalised) nickname = doc id,
+      // NOT the anonymous uid. This lets a participant resume the same
+      // journal from any device by re-entering the same code + nickname
+      // (Impact Bingo model). Anonymous auth is kept purely as a lightweight
+      // abuse gate (isAnon()). Trade-off: anyone in the workshop who knows a
+      // nickname could read/overwrite that participant's data — acceptable
+      // for a low-stakes reflection journal, same as Impact Bingo.
+      match /participants/{nick} {
+        allow read: if workshopOwner(workshopId);
+        allow read, create, update: if isAnon();
+      }
+
+      match /responses/{responseId} {
+        allow read: if workshopOwner(workshopId);
+        allow read, create, update: if isAnon();
+      }
+
+      match /summaries/{summaryId} {
+        allow read: if workshopOwner(workshopId);
+        allow write: if false;
+      }
+    }
+
+    // ─── reflective-journal: top-level summary retrieval by code ─────────────
+
+    match /summaries/{code} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // ═══ LEARNING PASSPORT ════════════════════════════════════════════════════
+    // Identity = email/password uid. The security-critical invariant: a client
+    // can NEVER write `score`. Points are awarded only by the
+    // awardPassportPoints Cloud Function (Admin SDK bypasses these rules).
+
+    function lpOwns(uid) {
+      return isPasswordUser() && request.auth.uid == uid;
+    }
+
+    // Learner profile — owner reads/writes their own non-sensitive profile.
+    match /learners/{uid} {
+      allow read: if lpOwns(uid);
+      allow create, update: if lpOwns(uid)
+        && request.resource.data.uid == uid;
+      allow delete: if false; // hard-delete is a server/admin path
+    }
+
+    // Passports — one per (uid, workshopCode). The doc id MUST be
+    // `<uid>_<workshopCode>` so a participant can only ever create their own,
+    // and exactly one per course.
+    match /passports/{passportId} {
+      // Participant reads own; null check handles existence-probe on a non-existent doc.
+      // Facilitator reads passports in courses they own.
+      allow read: if (isPasswordUser() && (resource == null || resource.data.learnerUid == request.auth.uid))
+        || (isFacilitator() && resource != null
+            && get(/databases/$(database)/documents/courses/$(resource.data.courseId)).data.facilitatorId == request.auth.uid);
+
+      // Create: owner only, score MUST start at 0, id must bind to this uid.
+      allow create: if isPasswordUser()
+        && request.resource.data.learnerUid == request.auth.uid
+        && passportId == request.auth.uid + '_' + request.resource.data.workshopCode
+        && request.resource.data.score == 0;
+
+      // Update: owner may edit display fields ONLY. `score` is immutable to
+      // clients — any change to it (or to learnerUid) is rejected here; the
+      // function uses the Admin SDK which is not bound by these rules.
+      allow update: if isPasswordUser()
+        && resource.data.learnerUid == request.auth.uid
+        && request.resource.data.score == resource.data.score
+        && request.resource.data.learnerUid == resource.data.learnerUid;
+
+      allow delete: if false;
+
+      // Idempotency / audit trail for awarded points — server-written only.
+      match /rewards/{refId} {
+        allow read: if isPasswordUser()
+          && get(/databases/$(database)/documents/passports/$(passportId)).data.learnerUid == request.auth.uid;
+        allow write: if false;
+      }
+
+      // Redemption ledger — server-written only by redeemReward (Admin SDK).
+      // One doc per reward per passport; owner may read to know what they've claimed.
+      match /redemptions/{rewardId} {
+        allow read: if isPasswordUser()
+          && get(/databases/$(database)/documents/passports/$(passportId)).data.learnerUid == request.auth.uid;
+        allow write: if false;
+      }
+    }
+
+    // Journal entries — owner-owned. id is deterministic
+    // `<passportId>__<questionId>` so there is no query/index in the slice.
+    match /journalEntries/{entryId} {
+      allow read: if isPasswordUser()
+        && (resource == null || resource.data.learnerUid == request.auth.uid);
+      allow create, update: if isPasswordUser()
+        && request.resource.data.learnerUid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // Courses — resolved by workshop code (doc id = code). Participants read
+    // the course of a code they hold; only staff create/modify.
+    match /courses/{code} {
+      allow read: if isPasswordUser() || isFacilitator();
+      allow create, update: if isFacilitator()
+        && request.resource.data.facilitatorId == request.auth.uid;
+      allow delete: if isFacilitator()
+        && resource.data.facilitatorId == request.auth.uid;
+    }
+
+    // Synthesis reports — generated and written ONLY by the
+    // generatePassportSynthesis Cloud Function (Admin SDK). One per passport
+    // (doc id = passportId). Owner may read; clients may never write.
+    match /synthesisReports/{passportId} {
+      allow read: if (isPasswordUser() && resource.data.learnerUid == request.auth.uid)
+        || (isFacilitator()
+            && get(/databases/$(database)/documents/courses/$(resource.data.courseId)).data.facilitatorId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // Leaderboard projection — written ONLY by awardPassportPoints (Admin
+    // SDK). It carries no sensitive data (first name + score only), so any
+    // authenticated Passport participant may read it (cohort-scoped queries
+    // filter by courseId). Clients can never write — the score path stays
+    // server-authoritative end to end.
+    match /leaderboardEntries/{id} {
+      // Participants read cohort scores; facilitators read for dashboard.
+      allow read: if isPasswordUser() || isFacilitator();
+      // Score/name/identity are server-written only. The ONLY client write
+      // permitted is the owner flipping their own `visible` flag (privacy
+      // opt-out) — score can never change via this path.
+      allow update: if isPasswordUser()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['visible'])
+        && request.resource.data.score == resource.data.score;
+      allow create, delete: if false;
+    }
+
+  }
+}

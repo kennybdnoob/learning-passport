@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Impact Bingo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --yellow: #FFFF00;
+  --pink: #FF00FF;
+  --cyan: #00FFFF;
+  --green: #00FF00;
+  --red: #FF3131;
+  --white: #FFFFFF;
+  --black: #000000;
+  --bg: #F0F0F0;
+  --border-width: 3px;
+  --border: 3px solid #000;
+  --shadow: 4px 4px 0px #000;
+  --shadow-lg: 8px 8px 0px #000;
+  --radius: 0px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--black);
+  min-height: 100vh;
+  overflow-x: hidden;
+  padding: 12px;
+  padding-top: 100px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* HEADER */
+.header {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 200;
+  background: var(--white);
+  border: var(--border);
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow);
+}
+
+.header-left { display: flex; flex-direction: column; min-width: 0; }
+.header-brand {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--black);
+}
+
+.header-player {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--black);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.header-right { display: flex; gap: 8px; align-items: center; }
+
+.balance-btn {
+  background: var(--yellow);
+  color: var(--black);
+  border: var(--border);
+  padding: 8px 16px;
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 3px 3px 0 #000;
+  transition: all 0.1s;
+}
+
+.balance-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+
+.how-btn {
+  background: var(--white);
+  border: var(--border);
+  color: var(--black);
+  padding: 8px 12px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 #000;
+  transition: all 0.1s;
+}
+
+.how-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+
+/* PAGE TITLE */
+.page-title {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  font-size: clamp(2rem, 10vw, 3.5rem);
+  text-align: center;
+  margin-bottom: 24px;
+  letter-spacing: -2px;
+  text-transform: uppercase;
+  line-height: 0.9;
+}
+
+/* GRID */
+.grid {
+  display: grid;
+  gap: 12px;
+  max-width: 1100px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* CARD / BINGO SQUARE */
+.card {
+  background: var(--white);
+  border: var(--border);
+  padding: 12px;
+  aspect-ratio: 1/1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: all 0.1s;
+}
+
+/* Massive touch target feel */
+.card:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 #000;
+}
+
+.card.cat-born { background: var(--yellow); }
+.card.cat-learnt { background: var(--cyan); }
+.card.cat-achieve { background: var(--pink); }
+.card.cat-recognize { background: var(--green); }
+
+.card.done {
+  background: #EEE;
+  border-color: #000;
+  transform: none !important;
+  box-shadow: 2px 2px 0 #000;
+}
+
+.card-icon { font-size: 2.2rem; margin-bottom: 4px; filter: drop-shadow(2px 2px 0 #000); }
+.card-num {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: var(--black);
+  background: var(--white);
+  border: 2px solid #000;
+  padding: 2px 6px;
+}
+
+.done-selfie { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.7; }
+.done-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--black);
+  color: var(--white);
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  font-size: 0.65rem;
+  padding: 4px 10px;
+  border: 2px solid #fff;
+  white-space: nowrap;
+  z-index: 2;
+  text-transform: uppercase;
+}
+
+/* OVERLAYS & MODALS */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(4px);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 16px;
+}
+.overlay.open { display: flex; }
+
+.modal {
+  background: var(--white);
+  border: var(--border);
+  padding: 32px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 12px 12px 0px #000;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modal h2 {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  font-size: 1.8rem;
+  color: var(--black);
+  text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: 12px;
+  letter-spacing: -1px;
+}
+
+.modal p {
+  color: var(--black);
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.criteria-box {
+  background: var(--yellow);
+  border: var(--border);
+  padding: 20px;
+  font-weight: 900;
+  color: var(--black);
+  margin: 16px 0 24px;
+  font-size: 1.1rem;
+  line-height: 1.3;
+  box-shadow: 4px 4px 0 #000;
+  text-transform: uppercase;
+}
+
+/* INPUTS */
+input[type=text], input[type=number], input[type=password], textarea {
+  width: 100%;
+  padding: 16px;
+  margin: 12px 0;
+  background: var(--white);
+  border: var(--border);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--black);
+  outline: none;
+  border-radius: 0;
+}
+input:focus, textarea:focus { background: var(--cyan); }
+
+/* BUTTONS */
+.btn-row { display: flex; gap: 12px; margin-top: 24px; }
+.btn-row-single { display: flex; margin-top: 24px; }
+
+button {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  font-size: 0.95rem;
+  border: var(--border);
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: all 0.1s;
+  flex: 1;
+  box-shadow: var(--shadow);
+  border-radius: 0;
+}
+
+button:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 #000;
+}
+
+button:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); box-shadow: none; transform: none; }
+
+.btn-buy { background: var(--pink); color: var(--black); }
+.btn-sell { background: var(--yellow); color: var(--black); }
+.btn-green { background: var(--green); color: var(--black); }
+.btn-ghost { background: var(--white); color: var(--black); }
+.btn-yellow { background: var(--yellow); color: var(--black); }
+.btn-navy { background: var(--black); color: var(--white); }
+
+.btn-camera {
+  background: var(--white);
+  color: var(--black);
+  width: 100%;
+  margin-bottom: 16px;
+  border: 3px dashed #000;
+  padding: 16px;
+  font-weight: 800;
+  text-transform: uppercase;
+  box-shadow: none;
+}
+.btn-camera:active { background: var(--green); }
+
+#imgPreview {
+  display: none;
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border: var(--border);
+  margin: 12px 0;
+  box-shadow: 4px 4px 0 #000;
+}
+
+/* SCORE PANEL */
+.score-panel {
+  background: var(--white);
+  border: var(--border);
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 6px 6px 0 #000;
+}
+
+.score-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.score-row:last-child {
+  margin-bottom: 0;
+  padding-top: 16px;
+  border-top: var(--border);
+}
+
+.score-label { font-size: 0.9rem; font-weight: 900; text-transform: uppercase; color: var(--black); }
+.score-value { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 1.1rem; color: var(--black); text-transform: uppercase; }
+.score-final { font-size: 1.4rem !important; background: var(--yellow); padding: 4px 8px; border: 2px solid #000; }
+
+.multiplier-bar { margin: 20px 0; }
+.multiplier-track { height: 16px; background: var(--white); border: var(--border); }
+.multiplier-fill { height: 100%; background: var(--green); transition: width 0.5s ease; border-right: var(--border); }
+
+/* LEDGER TABLE */
+.ledger-wrap {
+  border: var(--border);
+  margin: 20px 0;
+  background: var(--white);
+  box-shadow: 4px 4px 0 #000;
+}
+
+table { width: 100%; border-collapse: collapse; }
+th { background: var(--black); color: var(--white); padding: 12px; text-align: left; font-family: 'Unbounded', sans-serif; font-size: 0.75rem; text-transform: uppercase; }
+td { padding: 12px; border-bottom: 2px solid #000; font-weight: 800; text-transform: uppercase; font-size: 0.9rem; }
+tr:last-child td { border-bottom: none; }
+.pos { background: var(--green); color: #000; padding: 2px 4px; }
+.neg { background: var(--red); color: #fff; padding: 2px 4px; }
+
+/* HOW TO PLAY */
+.how-step { display: flex; gap: 16px; margin-bottom: 20px; align-items: flex-start; }
+.step-num {
+  background: var(--black);
+  color: var(--white);
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  font-size: 1rem;
+  width: 36px;
+  height: 36px;
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 3px 3px 0 #000;
+}
+.step-text { font-size: 1rem; font-weight: 800; color: var(--black); line-height: 1.3; text-transform: uppercase; }
+
+.multiplier-table { width: 100%; border-collapse: collapse; margin: 16px 0; border: var(--border); }
+.multiplier-table th { background: var(--black); color: var(--white); padding: 10px; }
+.multiplier-table td { padding: 10px; border-bottom: 2px solid #000; font-weight: 800; text-transform: uppercase; }
+.multiplier-table .highlight { background: var(--yellow); }
+
+/* REFLECTION */
+.reflection-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--pink);
+  z-index: 2000;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.reflection-overlay.open { display: flex; }
+
+.reflection-box {
+  background: var(--white);
+  border: var(--border);
+  padding: 32px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 15px 15px 0 #000;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.pin-input { display: flex; gap: 12px; justify-content: center; margin: 32px 0; }
+.pin-digit {
+  width: 60px;
+  height: 70px;
+  background: var(--white);
+  border: var(--border);
+  text-align: center;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--black);
+  outline: none;
+  box-shadow: 4px 4px 0 #000;
+}
+.pin-digit:focus { background: var(--yellow); transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+
+.gemini-summary {
+  background: var(--white);
+  border: var(--border);
+  padding: 24px;
+  margin-top: 24px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--black);
+  line-height: 1.5;
+  box-shadow: 6px 6px 0 #000;
+}
+
+.coaching-q {
+  background: var(--cyan);
+  border: var(--border);
+  padding: 20px;
+  margin-top: 24px;
+  font-size: 1.1rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: 1.3;
+  box-shadow: 6px 6px 0 #000;
+}
+
+/* FAB */
+.reflect-fab {
+  position: fixed;
+  bottom: 32px;
+  right: 24px;
+  z-index: 500;
+  background: var(--pink);
+  color: var(--black);
+  border: var(--border);
+  padding: 16px 24px;
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  font-size: 1rem;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.1s;
+}
+
+.reflect-fab.unlocked {
+  background: var(--green);
+  animation: fabPulse 1.5s infinite;
+}
+
+@keyframes fabPulse {
+  0% { box-shadow: 4px 4px 0 #000; transform: translate(0,0); }
+  50% { box-shadow: 8px 8px 0 #000; transform: translate(-2px, -2px); }
+  100% { box-shadow: 4px 4px 0 #000; transform: translate(0,0); }
+}
+
+/* TOAST */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--black);
+  color: var(--white);
+  padding: 16px 32px;
+  border: var(--border);
+  border-color: #fff;
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  font-size: 1rem;
+  z-index: 3000;
+  transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+  pointer-events: none;
+  box-shadow: 8px 8px 0 #000;
+}
+.toast.up { transform: translateX(-50%) translateY(0); }
+.toast.ok { background: var(--green); color: #000; border-color: #000; }
+.toast.err { background: var(--red); color: #fff; border-color: #000; }
+
+.state-msg { grid-column: 1/-1; text-align: center; padding: 60px 20px; font-weight: 900; text-transform: uppercase; }
+
+@media(max-width: 480px) {
+  body { padding: 8px; padding-top: 90px; }
+  .header { left: 8px; right: 8px; top: 8px; }
+  .card-icon { font-size: 1.8rem; }
+  .modal { padding: 24px 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header" id="hdr" style="display:none">
+  <div class="header-left">
+    <div class="header-brand">Impact Bingo</div>
+    <div class="header-player" id="hdrPlayer"></div>
+  </div>
+  <div class="header-right">
+    <button class="how-btn" onclick="resetGame()" title="Reset Progress" style="padding:clamp(8px,1.8vw,11px) clamp(10px,2vw,14px)">🔄 Reset</button>
+    <button class="how-btn" onclick="openModal('oHow')">❓ How to Play</button>
+    <button class="balance-btn" onclick="openLedger()">💰 <span id="hdrBalance">1,000</span></button>
+  </div>
+</div>
+
+<h1 class="page-title">Impact Bingo</h1>
+<div class="grid" id="grid"><div class="state-msg">Loading…</div></div>
+
+<div class="overlay open" id="oWelcome">
+  <div class="modal">
+    <h2>Welcome 👋</h2>
+    <p>Enter your <strong style="color:var(--yellow)">Room Code</strong> and nickname to join the game and receive <strong style="color:var(--yellow)">1,000 starting points</strong>.</p>
+    <input type="text" id="inRoom" placeholder="Room Code (e.g. MAXIS26)" maxlength="20" style="text-transform:uppercase">
+    <input type="text" id="inNick" placeholder="Your Nickname" maxlength="30">
+    <div class="btn-row-single">
+      <button class="btn-buy" id="btnEnter" onclick="register()">Enter the Game</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="overlay" id="oLobby">
+  <div class="modal" style="text-align:center">
+    <div style="font-size:3rem;margin-bottom:16px">⏳</div>
+    <h2>You're in the lobby</h2>
+    <p>Welcome, <strong id="lobbyNick" style="color:var(--yellow)"></strong>! You're registered. The facilitator will start the game shortly.</p>
+    <div style="margin-top:20px;padding:16px;background:rgba(255,204,0,0.08);border-radius:10px;border:1px solid rgba(255,204,0,0.2)">
+      <p style="font-size:.85rem;color:var(--text-sec)">Room: <strong style="color:var(--yellow)" id="lobbyRoom"></strong></p>
+      <p style="font-size:.85rem;color:var(--text-sec);margin-top:4px">Waiting for facilitator to start…</p>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="oHow" style="z-index:1500">
+  <div class="modal" style="max-width:500px">
+    <h2>How to Play 🎯</h2>
+    <div class="how-step"><div class="step-num">1</div><div class="step-text"><strong>Find people</strong> who match each square on your board. Each square is a human trait, skill, achievement, or recognition.</div></div>
+    <div class="how-step"><div class="step-num">2</div><div class="step-text"><strong>Negotiate a price.</strong> You start with 1,000 points. When you find a match, agree on a price with them.</div></div>
+    <div class="how-step"><div class="step-num">3</div><div class="step-text"><strong>Buy their answer</strong> — tap the square, expand it, hit Buy. Snap a selfie together as proof. You spend points.</div></div>
+    <div class="how-step"><div class="step-num">4</div><div class="step-text"><strong>Sell yourself</strong> — when someone wants to buy from you, tap the square and hit Sell. You earn points.</div></div>
+    <div class="how-step"><div class="step-num">5</div><div class="step-text"><strong>Complete lines</strong> to unlock your score multiplier. Lines = rows, columns, and diagonals.</div></div>
+    <p style="color:var(--yellow);font-family:'Unbounded',sans-serif;font-size:.8rem;font-weight:900;margin-bottom:8px;">SCORING MULTIPLIER</p>
+    <table class="multiplier-table">
+      <tr><th>Lines Completed</th><th>Multiplier</th></tr>
+      <tr><td>0 lines</td><td class="neg">×0.0 — no score</td></tr>
+      <tr><td>1 line</td><td class="highlight">×0.3</td></tr>
+      <tr><td>2 lines</td><td class="highlight">×0.6</td></tr>
+      <tr><td>3 lines</td><td class="highlight">×0.9</td></tr>
+      <tr><td>4 lines</td><td class="highlight">×1.2 ⭐</td></tr>
+      <tr><td>5+ lines</td><td class="highlight">+0.3 per line</td></tr>
+    </table>
+    <p style="margin-top:12px;font-size:.85rem;">💡 <strong>Strategy tip:</strong> Don't just collect points — complete lines. Someone with fewer points but more lines can outscore everyone.</p>
+    <div class="btn-row-single"><button class="btn-ghost" onclick="closeModal('oHow')">Got it!</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="oCard">
+  <div class="modal">
+    <h2>Find someone who…</h2>
+    <div class="criteria-box" id="cardCriteria"></div>
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="closeModal('oCard')">Close</button>
+      <button class="btn-buy" id="cardBuyBtn" onclick="toBuy()">Buy</button>
+      <button class="btn-green" onclick="toClaim()">Claim</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="oBuy">
+  <div class="modal">
+    <h2>Buy Answer</h2>
+    <div class="criteria-box" id="buyCriteria"></div>
+    <button class="btn-camera" onclick="document.getElementById('camInput').click()">📸 Snap selfie with your seller</button>
+    <input type="file" id="camInput" accept="image/*" capture="user" style="display:none" onchange="previewImg(event)">
+    <img id="imgPreview" alt="Preview">
+    <input type="text" id="buyPartner" placeholder="Who are you buying from?" maxlength="30">
+    <input type="number" id="buyAmount" placeholder="Amount to pay" min="1">
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="closeModal('oBuy')">Cancel</button>
+      <button class="btn-buy" id="btnBuy" onclick="submitBuy()">Confirm Buy</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="oClaim">
+  <div class="modal">
+    <h2>Claim Points</h2>
+    <div class="criteria-box" id="claimCriteria"></div>
+    <p>Someone bought this from you. Enter their nickname and the <strong>exact amount</strong> you negotiated — from memory.</p>
+    <input type="text" id="claimPartner" placeholder="Who bought from you?" maxlength="30">
+    <input type="number" id="claimAmount" placeholder="Amount they paid you" min="1">
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="closeModal('oClaim')">Cancel</button>
+      <button class="btn-green" id="btnClaim" onclick="submitClaim()">Claim Points</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="oLedger">
+  <div class="modal" style="max-width:500px">
+    <h2>Your Score 📊</h2>
+    <div class="score-panel" id="scorePanel">
+      <div class="score-row"><span class="score-label">Balance</span><span class="score-value" id="sBalance">1,000</span></div>
+      <div class="score-row"><span class="score-label">Unclaimed Pool</span><span class="score-value" id="sUnclaimed" style="color:#888">—</span></div>
+      <div class="score-row"><span class="score-label">Lines Completed</span><span class="score-value" id="sLines">0</span></div>
+      <div class="score-row"><span class="score-label">Multiplier</span><span class="score-value" id="sMultiplier">×0.0</span></div>
+      <div class="multiplier-bar"><div class="multiplier-track"><div class="multiplier-fill" id="sMultFill" style="width:0%"></div></div></div>
+      <div class="score-row"><span class="score-label" style="color:white;font-weight:800">Final Score</span><span class="score-value score-final" id="sFinal">0</span></div>
+    </div>
+    <p style="margin-bottom:4px;font-size:.85rem;">Transaction History</p>
+    <div class="ledger-wrap">
+      <table><thead><tr><th>Action</th><th>Partner</th><th>Points</th></tr></thead>
+      <tbody id="ledgerBody"></tbody></table>
+    </div>
+    <div class="btn-row-single"><button class="btn-ghost" onclick="closeModal('oLedger')">Close</button></div>
+  </div>
+</div>
+
+<div class="reflection-overlay" id="oReflection">
+  <div class="reflection-box">
+    <div id="reflLocked">
+      <div class="reflection-locked">
+        <span class="lock-icon">🏆</span>
+        <h2 style="margin-bottom:8px">Board Complete!</h2>
+        <p>You've completed your bingo board! Your facilitator will announce the 4-digit unlock code when it's time to reflect.</p>
+        <div class="pin-input">
+          <input type="password" class="pin-digit" maxlength="1" id="p1" oninput="pinNext(this,'p2')" onkeydown="pinBack(this,null,event)" inputmode="numeric">
+          <input type="password" class="pin-digit" maxlength="1" id="p2" oninput="pinNext(this,'p3')" onkeydown="pinBack(this,'p1',event)" inputmode="numeric">
+          <input type="password" class="pin-digit" maxlength="1" id="p3" oninput="pinNext(this,'p4')" onkeydown="pinBack(this,'p2',event)" inputmode="numeric">
+          <input type="password" class="pin-digit" maxlength="1" id="p4" oninput="pinNext(this,null)" onkeydown="pinBack(this,'p3',event)" inputmode="numeric">
+        </div>
+        <button class="btn-yellow" style="width:100%;max-width:200px;margin:0 auto;display:block" onclick="unlockReflection()">Unlock</button>
+      </div>
+    </div>
+    <div id="reflQuestions" style="display:none">
+      <h2 style="margin-bottom:8px">Reflect 🌟</h2>
+      <p>Take a moment. Answer these questions honestly.</p>
+      <div id="qContainer"></div>
+      <div class="btn-row-single" style="margin-top:20px">
+        <button class="btn-yellow" id="btnSubmitRefl" onclick="submitReflection()">Get My Summary</button>
+      </div>
+    </div>
+    <div id="reflSummary" style="display:none">
+      <h2 style="margin-bottom:8px">Your Story 🌟</h2>
+      <div class="gemini-summary" id="summaryText">Generating your personalised summary…</div>
+      <div class="coaching-q" id="coachingQ" style="display:none"></div>
+      <div class="btn-row-single" style="margin-top:20px">
+        <button class="btn-ghost" onclick="closeModal('oReflection')">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<button class="reflect-fab" id="reflectFab" onclick="openReflectionPanel()" disabled title="Complete your board to unlock reflection">
+  🌟 Reflect
+</button>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore,collection,doc,getDoc,getDocs,addDoc,setDoc,updateDoc,deleteDoc,query,where,serverTimestamp,onSnapshot }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getStorage,ref,uploadString,getDownloadURL }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js';
+import { getFunctions, httpsCallable }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js';
+
+const firebaseConfig = {
+  apiKey:"AIzaSyDKon9lKqQbypo27FqS8KVDSqfxgr4ON0c",
+  authDomain:"learning-activities-kny.firebaseapp.com",
+  projectId:"learning-activities-kny",
+  storageBucket:"learning-activities-kny.firebasestorage.app",
+  messagingSenderId:"167106830334",
+  appId:"1:167106830334:web:e7441ec23ba33f7f4eaaaf",
+  measurementId:"G-C6WJYRYE1B"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app);
+const fns = getFunctions(app, 'asia-southeast1');
+
+// NETWORK SAFETY — a Storage upload or Firestore write that can't reach the
+// server stays "pending" forever (never resolves OR rejects), which is what
+// froze the Buy button on "Processing…". This races every critical call
+// against a deadline so the UI always recovers and names the failing step.
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error((label || 'Request') +
+        ' timed out — check your connection and try again.')), ms)
+    ),
+  ]);
+}
+
+// STATE
+let nick='',balance=1000,history=[],gridData=[],doneIds=new Set();
+let activeId=null,activeCriteria='',activeTheme='';
+let selfie=null,sessionId=null,sessionData=null,completedLines=0;
+
+// BOOT
+async function boot() {
+  document.getElementById('grid').innerHTML = '<div class="state-msg">Loading…</div>';
+
+  // Pre-fill room code after a reset (stored in sessionStorage by resetGame)
+  const rejoinRoom = sessionStorage.getItem('ib_rejoin_room');
+  if (rejoinRoom) {
+    document.getElementById('inRoom').value = rejoinRoom;
+    sessionStorage.removeItem('ib_rejoin_room');
+    document.getElementById('inNick').focus(); // put cursor straight on nickname
+  }
+
+  // Auto-restore session if it exists
+  const saved = localStorage.getItem('impact_bingo_session');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      if (data.room && data.nick) {
+        document.getElementById('inRoom').value = data.room;
+        document.getElementById('inNick').value = data.nick;
+        // Auto-trigger registration after a brief delay to let DOM settle
+        setTimeout(() => register(), 150);
+      }
+    } catch(e) {
+      console.error("Failed to restore session", e);
+    }
+  }
+}
+boot();
+
+// REGISTER
+window.register = async function() {
+  const roomRaw = document.getElementById('inRoom').value.trim().toUpperCase();
+  const nickRaw = document.getElementById('inNick').value.trim().toUpperCase();
+  if (!roomRaw) { toast('Enter a room code','err'); return; }
+  if (!nickRaw) { toast('Enter a nickname','err'); return; }
+
+  const btn = document.getElementById('btnEnter');
+  btn.disabled=true; btn.textContent='Joining…';
+
+  try {
+    // Find session by room code
+    const q = query(collection(db,'sessions'), where('roomCode','==',roomRaw), where('status','==','active'));
+    const snap = await getDocs(q);
+    if (snap.empty) { 
+      toast('Room code not found or session not active','err'); 
+      btn.disabled=false; 
+      btn.textContent='Enter the Game'; 
+      localStorage.removeItem('impact_bingo_session'); // Auto-clear dead sessions
+      return; 
+    }
+
+    const sessionDoc = snap.docs[0];
+    sessionId = sessionDoc.id;
+    sessionData = sessionDoc.data();
+    nick = nickRaw;
+
+    // Check duplicate nickname
+    const uRef = doc(db,'sessions',sessionId,'users',nick);
+    const uSnap = await getDoc(uRef);
+
+    if (uSnap.exists()) {
+      // Returning player — restore state
+      balance = uSnap.data().balance ?? 1000;
+      const doneSnap = await getDocs(collection(db,'sessions',sessionId,'users',nick,'done'));
+      doneSnap.forEach(d => { doneIds.add(Number(d.id)); });
+      toast(`Welcome back, ${nick}!`,'ok');
+    } else {
+      await setDoc(uRef, { balance:1000, joinedAt:serverTimestamp() });
+      balance = 1000;
+      toast(`Welcome, ${nick}! You have 1,000 points`,'ok');
+    }
+
+    // Save to local storage upon successful entry
+    localStorage.setItem('impact_bingo_session', JSON.stringify({ room: roomRaw, nick: nickRaw }));
+
+    // Load criteria
+    const critSnap = await getDocs(collection(db,'sessions',sessionId,'criteria'));
+    gridData = critSnap.docs.map(d=>d.data()).sort((a,b)=>a.id-b.id);
+    const size = sessionData.gridSize || Math.round(Math.sqrt(gridData.length));
+
+    renderGrid(gridData, size);
+
+    // Restore done cards
+    if (doneIds.size > 0) {
+      const doneSnap = await getDocs(collection(db,'sessions',sessionId,'users',nick,'done'));
+      doneSnap.forEach(d => { restoreCard(Number(d.id), d.data().selfieUrl); });
+      checkLines(size);
+      // Re-unlock reflection button if board was already complete
+      if (doneIds.size === gridData.length) {
+        setBoardComplete();
+      }
+    }
+
+    // Check session phase — lobby or active
+    if(sessionData.phase === 'lobby' || sessionData.status === 'active') {
+      document.getElementById('oWelcome').classList.remove('open');
+      if(sessionData.phase === 'lobby') {
+        // Show lobby waiting screen
+        document.getElementById('lobbyNick').textContent = nick;
+        document.getElementById('lobbyRoom').textContent = roomRaw;
+        document.getElementById('oLobby').classList.add('open');
+        // Poll for game start
+        pollForStart();
+      } else {
+        // Game already active — go straight in
+        document.getElementById('hdr').style.display='flex';
+        document.getElementById('hdrPlayer').textContent=`Player: ${nick}`;
+        updateBalance();
+        watchSessionClose();
+      }
+    } else {
+      document.getElementById('oWelcome').classList.remove('open');
+      document.getElementById('hdr').style.display='flex';
+      document.getElementById('hdrPlayer').textContent=`Player: ${nick}`;
+      updateBalance();
+      watchSessionClose();
+    }
+
+  } catch(e) {
+    toast('Error: '+e.message,'err');
+    btn.disabled=false; btn.textContent='Enter the Game';
+  }
+};
+
+// POLL FOR GAME START (lobby phase)
+function pollForStart() {
+  const interval = setInterval(async () => {
+    try {
+      const snap = await getDoc(doc(db,'sessions',sessionId));
+      if(!snap.exists()) return;
+      const data = snap.data();
+      if(data.phase === 'active' || data.status === 'active') {
+        clearInterval(interval);
+        document.getElementById('oLobby').classList.remove('open');
+        document.getElementById('hdr').style.display='flex';
+        document.getElementById('hdrPlayer').textContent=`Player: ${nick}`;
+        updateBalance();
+        watchSessionClose();
+        toast('🎮 Game has started!','ok');
+      }
+    } catch(e) { console.error('Poll error',e); }
+  }, 3000); // check every 3 seconds
+}
+
+// WATCH FOR SESSION PHASE CHANGES — unlocks reflection when facilitator opens it OR ends the session
+let _sessionWatcher = null;
+let _reflectionUnlocked = false;
+function watchSessionClose() {
+  if (_sessionWatcher) return; // only set up once
+  _sessionWatcher = onSnapshot(doc(db,'sessions',sessionId), snap => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const reflectionReady = data.status === 'closed' || data.phase === 'reflection';
+    if (reflectionReady && !_reflectionUnlocked) {
+      _reflectionUnlocked = true;
+      setBoardComplete(); // unlock the 🌟 Reflect button for all players
+      const msg = data.status === 'closed'
+        ? '🏁 Session ended — tap Reflect to share your takeaways!'
+        : '🌟 Reflection is now open — tap Reflect to share your takeaways!';
+      toast(msg, 'ok');
+    }
+  });
+}
+
+// VALIDATE SELL PARTNER — must be registered in session
+async function validateSellPartner(partnerNick) {
+  try {
+    const uSnap = await getDoc(doc(db,'sessions',sessionId,'users',partnerNick));
+    return uSnap.exists();
+  } catch(e) { return false; }
+}
+
+// RESET — wipes Firestore data + localStorage, returns to join screen
+window.resetGame = async function() {
+  if (!confirm("Reset your progress? Your balance, completed squares, and score will be wiped. You'll start fresh with 1,000 points.")) return;
+
+  // Grab room code before clearing, so we can pre-fill the join screen
+  const saved = localStorage.getItem('impact_bingo_session');
+  let roomCode = null;
+  try { roomCode = saved ? JSON.parse(saved).room : null; } catch(e) {}
+
+  try {
+    if (sessionId && nick) {
+      // Delete all completed-square records
+      const doneSnap = await getDocs(collection(db,'sessions',sessionId,'users',nick,'done'));
+      await Promise.all(doneSnap.docs.map(d => deleteDoc(d.ref)));
+      // Reset the user doc (rules allow update but not delete)
+      await setDoc(doc(db,'sessions',sessionId,'users',nick), {
+        balance: 1000, doneCount: 0, lines: 0, finalScore: 0, resetAt: serverTimestamp()
+      }, { merge: true });
+    }
+  } catch(e) {
+    console.error('Reset error:', e);
+  }
+
+  localStorage.removeItem('impact_bingo_session');
+  // Temporarily store room code so the join screen can pre-fill it
+  if (roomCode) sessionStorage.setItem('ib_rejoin_room', roomCode);
+  window.location.reload();
+};
+
+// RENDER GRID
+function renderGrid(data, size) {
+  const grid = document.getElementById('grid');
+  grid.style.gridTemplateColumns=`repeat(${size}, 1fr)`;
+  grid.innerHTML='';
+  const icons = ['🌟','🎯','💡','🏆','🎭','🔥','⚡','🌊','🎪','🦋','🎸','🌈','🚀','💎','🎨','🌺','🏅','🎲','🌙','💫','🎤','🦅','🌿','🏔️','🎯'];
+  data.forEach((item,i) => {
+    const card = document.createElement('div');
+    card.className = 'card '+catClass(item.theme);
+    card.id = `c${item.id}`;
+    card.style.animationDelay=`${i*40}ms`;
+    card.onclick = () => openCard(item.id);
+    card.innerHTML = `
+      <div class="card-icon">${icons[i % icons.length]}</div>
+      <div class="card-num">#${item.id}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function catClass(t){
+  t=(t||'').toLowerCase();
+  if(t.includes('born')) return 'cat-born';
+  if(t.includes('learnt')||t.includes('skill')) return 'cat-learnt';
+  if(t.includes('achiev')) return 'cat-achieve';
+  if(t.includes('recogni')) return 'cat-recognize';
+  return 'cat-born';
+}
+
+// LINE DETECTION
+function checkLines(size) {
+  size = size || sessionData?.gridSize || Math.round(Math.sqrt(gridData.length));
+  const ids = Array.from(doneIds);
+  const grid = [];
+  for(let r=0;r<size;r++){
+    grid.push([]);
+    for(let c=0;c<size;c++){
+      grid[r].push(ids.includes(r*size+c+1));
+    }
+  }
+  let lines=0;
+  // rows
+  for(let r=0;r<size;r++) if(grid[r].every(Boolean)) lines++;
+  // cols
+  for(let c=0;c<size;c++) if(grid.map(r=>r[c]).every(Boolean)) lines++;
+  // diagonals
+  if(Array.from({length:size},(_,i)=>grid[i][i]).every(Boolean)) lines++;
+  if(Array.from({length:size},(_,i)=>grid[i][size-1-i]).every(Boolean)) lines++;
+  completedLines = lines;
+  return lines;
+}
+
+function getMultiplier(lines) {
+  if(lines===0) return 0;
+  return lines * 0.3;
+}
+
+function getFinalScore(bal, lines) {
+  return Math.round(bal * getMultiplier(lines));
+}
+
+// OPEN CARD
+function openCard(id) {
+  const item = gridData.find(x=>x.id===id);
+  if(!item) return;
+  activeId=id; activeCriteria=item.criteria; activeTheme=item.theme;
+  document.getElementById('cardCriteria').textContent=item.criteria;
+  const buyBtn = document.getElementById('cardBuyBtn');
+  buyBtn.style.display = doneIds.has(id) ? 'none' : '';
+  openModal('oCard');
+}
+
+window.toBuy   = function(){ closeModal('oCard'); document.getElementById('buyCriteria').textContent=activeCriteria; openModal('oBuy'); };
+window.toClaim = function(){ closeModal('oCard'); document.getElementById('claimCriteria').textContent=activeCriteria; openModal('oClaim'); };
+
+// IMAGE
+window.previewImg = function(e) {
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement('canvas');
+      // Throwaway proof-of-trade thumbnail — never needs to be high-res.
+      // ~360px @ q0.4 lands around 10–25 KB, downscaling only (never upscale).
+      const W=Math.min(360,img.width),scale=W/img.width;
+      canvas.width=W; canvas.height=Math.round(img.height*scale);
+      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+      selfie=canvas.toDataURL('image/jpeg',0.4);
+      const prev=document.getElementById('imgPreview');
+      prev.src=selfie; prev.style.display='block';
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+// BUY
+window.submitBuy = async function() {
+  const partner=document.getElementById('buyPartner').value.trim().toUpperCase();
+  const amount=parseInt(document.getElementById('buyAmount').value);
+  if(!selfie){ toast('Snap a selfie first!','err'); return; }
+  if(!partner){ toast('Who are you buying from?','err'); return; }
+  if(partner === nick){ toast("You can't buy from yourself!",'err'); return; }
+  if(!amount||amount<=0){ toast('Enter a valid amount','err'); return; }
+  if(amount>balance){ toast('Not enough points!','err'); return; }
+
+  const btn=document.getElementById('btnBuy');
+  btn.disabled=true; btn.textContent='Checking seller…';
+
+  // Validate seller exists in session
+  const sellerExists = await validateSellPartner(partner);
+  if(!sellerExists) {
+    toast(`"${partner}" is not registered in this session`,'err');
+    btn.disabled=false; btn.textContent='Confirm Buy';
+    return;
+  }
+
+  btn.textContent='Processing…';
+  try {
+    const imgRef=ref(storage,`selfies/${sessionId}_${nick}_box${activeId}_${Date.now()}.jpg`);
+    await withTimeout(uploadString(imgRef,selfie,'data_url'),20000,'Uploading selfie');
+    const selfieUrl=await withTimeout(getDownloadURL(imgRef),15000,'Reading selfie URL');
+
+    await withTimeout(addDoc(collection(db,'sessions',sessionId,'transactions'),{
+      action:'BUY',boxId:activeId,criteria:activeCriteria,
+      buyer:nick,seller:partner,amount,selfieUrl,
+      claimed:false,timestamp:serverTimestamp()
+    }),15000,'Saving transaction');
+
+    balance-=amount;
+    const size=sessionData?.gridSize||Math.round(Math.sqrt(gridData.length));
+    doneIds.add(activeId);
+    const lines=checkLines(size);
+    const finalScore=getFinalScore(balance,lines);
+
+    await withTimeout(setDoc(doc(db,'sessions',sessionId,'users',nick),{balance,lines,finalScore,doneCount:doneIds.size},{merge:true}),15000,'Updating your score');
+    await withTimeout(setDoc(doc(db,'sessions',sessionId,'users',nick,'done',String(activeId)),{
+      selfieUrl,criteria:activeCriteria,completedAt:serverTimestamp()
+    }),15000,'Saving progress');
+
+    history.push({action:'Bought',partner,amount:-amount});
+    updateBalance();
+    lockCard(activeId,selfie);
+    closeModal('oBuy');
+    toast(`✓ Bought for ${amount} pts!`,'ok');
+
+    // Check if board complete
+    if(doneIds.size===gridData.length) {
+      setBoardComplete();
+    }
+  } catch(e) {
+    toast('Error: '+e.message,'err');
+    btn.disabled=false; btn.textContent='Confirm Buy';
+  }
+};
+
+// CLAIM — seller verifies a matching BUY transaction and collects their points
+window.submitClaim = async function() {
+  const partner=document.getElementById('claimPartner').value.trim().toUpperCase();
+  const amount=parseInt(document.getElementById('claimAmount').value);
+
+  if(!partner){ toast("Enter the buyer's nickname",'err'); return; }
+  if(partner===nick){ toast("You can't claim from yourself!",'err'); return; }
+  if(!amount||amount<=0){ toast('Enter the amount','err'); return; }
+
+  const btn=document.getElementById('btnClaim');
+  btn.disabled=true; btn.textContent='Verifying…';
+
+  try {
+    // Fetch all BUY transactions in this session where this player is the seller
+    const txSnap=await getDocs(query(
+      collection(db,'sessions',sessionId,'transactions'),
+      where('action','==','BUY'),
+      where('seller','==',nick)
+    ));
+
+    // Find an unclaimed transaction matching buyer + exact amount
+    const match=txSnap.docs.find(d=>{
+      const tx=d.data();
+      return tx.buyer===partner && tx.amount===amount && tx.claimed===false;
+    });
+
+    if(!match){
+      toast(`No unclaimed purchase found — check name and amount`,'err');
+      btn.disabled=false; btn.textContent='Claim Points';
+      return;
+    }
+
+    btn.textContent='Claiming…';
+
+    // Mark the transaction as claimed (one-way, enforced by Firestore rule)
+    await updateDoc(doc(db,'sessions',sessionId,'transactions',match.id),{
+      claimed:true, claimedAt:serverTimestamp()
+    });
+
+    // Credit the seller's balance
+    balance+=amount;
+    const size=sessionData?.gridSize||Math.round(Math.sqrt(gridData.length));
+    const lines=checkLines(size);
+    const finalScore=getFinalScore(balance,lines);
+    await setDoc(doc(db,'sessions',sessionId,'users',nick),{balance,lines,finalScore},{merge:true});
+
+    history.push({action:'Claimed',partner,amount});
+    updateBalance();
+    closeModal('oClaim');
+    toast(`✓ Claimed ${amount} pts from ${partner}!`,'ok');
+
+  } catch(e){
+    toast('Error: '+e.message,'err');
+    btn.disabled=false; btn.textContent='Claim Points';
+  }
+};
+
+// LOCK CARD
+function lockCard(id,imgSrc) {
+  const card=document.getElementById(`c${id}`); if(!card) return;
+  card.classList.add('done');
+  card.onclick=()=>openCard(id);
+  card.innerHTML=`<img src="${imgSrc}" class="done-selfie" alt="Proof"><div class="done-badge">✓ Done</div>`;
+}
+function restoreCard(id,selfieUrl) {
+  const card=document.getElementById(`c${id}`); if(!card) return;
+  card.classList.add('done');
+  card.onclick=()=>openCard(id);
+  card.innerHTML=`<img src="${selfieUrl}" class="done-selfie" alt="Proof"><div class="done-badge">✓ Done</div>`;
+}
+
+// BALANCE + SCORE
+function updateBalance() {
+  document.getElementById('hdrBalance').textContent=balance.toLocaleString();
+}
+
+window.openLedger = async function() {
+  const size=sessionData?.gridSize||4;
+  const lines=checkLines(size);
+  const mult=getMultiplier(lines);
+  const final=getFinalScore(balance,lines);
+  const maxLines=size*2+2;
+
+  document.getElementById('sBalance').textContent=balance.toLocaleString()+' pts';
+  document.getElementById('sLines').textContent=`${lines} / ${maxLines}`;
+  document.getElementById('sMultiplier').textContent=`×${mult.toFixed(1)}`;
+  document.getElementById('sFinal').textContent=final.toLocaleString()+' pts';
+  document.getElementById('sMultFill').style.width=`${Math.min(100,(lines/maxLines)*100)}%`;
+
+  // Calculate unclaimed pool — BUY transactions where this player is seller but hasn't claimed
+  let unclaimedTotal=0, unclaimedCount=0;
+  try {
+    const txSnap=await getDocs(query(
+      collection(db,'sessions',sessionId,'transactions'),
+      where('action','==','BUY'),
+      where('seller','==',nick)
+    ));
+    txSnap.docs.forEach(d=>{
+      if(d.data().claimed===false){ unclaimedTotal+=d.data().amount; unclaimedCount++; }
+    });
+  } catch(e){ /* non-critical */ }
+
+  const unclaimedEl=document.getElementById('sUnclaimed');
+  if(unclaimedEl){
+    unclaimedEl.textContent=unclaimedTotal>0
+      ? `${unclaimedTotal.toLocaleString()} pts (${unclaimedCount} unclaimed)`
+      : '—';
+    unclaimedEl.style.color=unclaimedTotal>0?'var(--red)':'#888';
+  }
+
+  const tbody=document.getElementById('ledgerBody');
+  tbody.innerHTML=history.length===0
+    ?'<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:20px">No transactions yet</td></tr>'
+    :[...history].reverse().map(tx=>`<tr><td>${tx.action}</td><td>${esc(tx.partner)}</td><td class="${tx.amount>0?'pos':'neg'}">${tx.amount>0?'+':''}${tx.amount.toLocaleString()}</td></tr>`).join('');
+  openModal('oLedger');
+};
+
+// REFLECTION
+window.pinNext = function(el,nextId) {
+  if(el.value && nextId) document.getElementById(nextId).focus();
+};
+
+// Backspace handling for the 4-box code. Without this the browser default
+// gives no focus management, so deleting feels like it eats the wrong boxes.
+// Standard OTP behaviour: if this box has a digit, clear just this one;
+// if it's already empty, step back and clear the previous box. One per press.
+window.pinBack = function(el,prevId,e) {
+  if(e.key !== 'Backspace') return;
+  e.preventDefault();
+  if(el.value) {
+    el.value = '';                       // clear current, stay here
+  } else if(prevId) {
+    const prev = document.getElementById(prevId);
+    prev.value = '';                     // step back, clear previous
+    prev.focus();
+  }
+};
+
+window.unlockReflection = function() {
+  const pin=[...Array(4)].map((_,i)=>document.getElementById(`p${i+1}`).value).join('');
+  const correct=sessionData?.passcode||'1234';
+  if(pin===String(correct)) {
+    document.getElementById('reflLocked').style.display='none';
+    document.getElementById('reflQuestions').style.display='block';
+    // Render questions
+    const qs=sessionData?.reflectionQuestions||['What surprised you most about how others saw you today?','Which square was hardest to sell — and what does that tell you?','What will you do differently in how you recognise others after today?'];
+    const container=document.getElementById('qContainer');
+    container.innerHTML=qs.map((q,i)=>`
+      <div style="margin-bottom:16px">
+        <p style="font-weight:700;color:var(--text);margin-bottom:6px">${i+1}. ${esc(q)}</p>
+        <textarea id="ans${i}" placeholder="Your answer…" rows="3"></textarea>
+      </div>
+    `).join('');
+  } else {
+    toast('Incorrect passcode','err');
+    ['p1','p2','p3','p4'].forEach(id=>{ document.getElementById(id).value=''; });
+    document.getElementById('p1').focus();
+  }
+};
+
+window.submitReflection = async function() {
+  const qs=sessionData?.reflectionQuestions||['Q1','Q2','Q3'];
+  const answers=qs.map((_,i)=>document.getElementById(`ans${i}`)?.value?.trim()||'');
+  if(answers.some(a=>!a)){ toast('Please answer all questions','err'); return; }
+
+  const btn=document.getElementById('btnSubmitRefl');
+  btn.disabled=true; btn.textContent='Generating your summary…';
+
+  document.getElementById('reflQuestions').style.display='none';
+  document.getElementById('reflSummary').style.display='block';
+
+  const size=sessionData?.gridSize||4;
+  const lines=checkLines(size);
+  const mult=getMultiplier(lines);
+  const final=getFinalScore(balance,lines);
+  const totalBought=history.filter(t=>t.action==='Bought').length;
+  const totalSold=history.filter(t=>t.action==='Sold').length;
+  const topSale=history.filter(t=>t.action==='Sold').reduce((max,t)=>t.amount>max?t.amount:max,0);
+
+  try {
+    const callGenerate = httpsCallable(fns, 'generateIBSummary');
+    const result = await callGenerate({
+      sessionId, nick, balance, lines,
+      finalScore: final,
+      totalBought, totalSold, topSale,
+      answers,
+    });
+    const text = result.data.text;
+
+    // Split coaching question
+    const parts=text.split('COACHING QUESTION:');
+    document.getElementById('summaryText').textContent=parts[0].trim();
+    if(parts[1]) {
+      const cq=document.getElementById('coachingQ');
+      cq.textContent='💬 '+parts[1].trim();
+      cq.style.display='block';
+    }
+
+    // Save to Firestore
+    await setDoc(doc(db,'sessions',sessionId,'reflections',nick),{
+      answers,summary:text,finalScore:final,lines,balance,completedAt:serverTimestamp()
+    });
+
+  } catch(e) {
+    console.error('Reflection error:',e);
+    document.getElementById('summaryText').textContent=
+      'Could not generate your summary.\n\nReason: '+e.message+'\n\nYour answers have been saved — the facilitator can retrieve them from the dashboard.';
+  }
+};
+
+// BOARD COMPLETE
+function setBoardComplete() {
+  const fab = document.getElementById('reflectFab');
+  fab.disabled = false;
+  fab.classList.add('unlocked');
+  fab.textContent = '🌟 Reflect';
+  setTimeout(() => {
+    toast('🎉 Board complete! Tap Reflect when ready','ok');
+  }, 800);
+}
+
+window.openReflectionPanel = function() {
+  document.getElementById('oReflection').classList.add('open');
+};
+
+// HELPERS
+window.openModal = function(id){ document.getElementById(id).classList.add('open'); }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+window.closeModal=function(id){
+  document.getElementById(id).classList.remove('open');
+  if(id==='oBuy'){
+    document.getElementById('buyPartner').value='';
+    document.getElementById('buyAmount').value='';
+    document.getElementById('camInput').value='';
+    document.getElementById('imgPreview').style.display='none';
+    selfie=null;
+    const b=document.getElementById('btnBuy'); b.disabled=false; b.textContent='Confirm Buy';
+  }
+  if(id==='oClaim'){
+    document.getElementById('claimPartner').value='';
+    document.getElementById('claimAmount').value='';
+    const b=document.getElementById('btnClaim'); b.disabled=false; b.textContent='Claim Points';
+  }
+};
+
+let toastT;
+function toast(msg,type){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className=`toast up ${type||''}`;
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>{ el.className='toast'; },2800);
+}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+document.querySelectorAll('.overlay').forEach(o=>{
+  o.addEventListener('click',e=>{ if(e.target===o&&o.id!=='oWelcome') closeModal(o.id); });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+rules_version = '2';
+
+// Impact Bingo participants are intentionally UNAUTHENTICATED (nickname-only,
+// zero-friction classroom join). Their selfies must therefore be uploadable
+// without Firebase Auth — mirroring the activity's already-open Firestore
+// model (transactions: `allow create: if true`).
+//
+// Exposure is scoped tightly:
+//   • ONLY the /selfies/ path is writable — everything else is denied.
+//   • The client downscales selfies to a ~10–25 KB JPEG thumbnail before
+//     upload, so a 512 KB ceiling is huge headroom yet still blocks anyone
+//     trying to dump a real multi-MB file into the bucket.
+//   • Public read is required: getDownloadURL() + the facilitator dashboard
+//     render these images.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /selfies/{fileName} {
+      allow read: if true;
+      allow write: if request.resource.size < 512 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Learning Passport selfies. UNLIKE Impact Bingo, Passport users are
+    // authenticated (email/password) — so writes REQUIRE auth and a user
+    // may only write inside their OWN uid folder. Public read mirrors the
+    // selfies pattern (avatars render via getDownloadURL).
+    match /passport-selfies/{uid}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.resource.size < 512 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Learning Passport resource files. Facilitators upload PDFs, slides, etc.
+    // Participants (and facilitators) read them. 10 MB ceiling; any file type.
+    match /passport-resources/{courseCode}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && (request.auth.token.role == 'facilitator'
+                       || request.auth.token.role == 'admin'
+                       || request.auth.token.email == 'aknyz88@gmail.com')
+                   && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Learning Passport synthesis PDFs. Written only by the
+    // generatePassportSynthesis Cloud Function (Admin SDK). The participant
+    // receives a long-lived SIGNED URL, so no client read/write rule is
+    // needed — both stay denied here.
+    match /passport-reports/{uid}/{fileName} {
+      allow read, write: if false;
+    }
+
+    // Everything else: locked.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

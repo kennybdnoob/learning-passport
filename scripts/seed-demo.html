@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Impact Bingo — Seed Demo Session</title>
+<style>
+  body{font-family:monospace;background:#111;color:#0f0;padding:32px;max-width:700px;margin:0 auto;}
+  h1{color:#ff0;font-size:1.2rem;margin-bottom:8px;}
+  p{color:#aaa;margin-bottom:24px;font-size:.9rem;line-height:1.6;}
+  button{background:#ff0;color:#000;border:none;padding:14px 32px;font-family:monospace;font-size:1rem;font-weight:900;cursor:pointer;text-transform:uppercase;margin-bottom:16px;display:block;}
+  button:hover{background:#ffcc00;}
+  button:disabled{background:#555;color:#999;cursor:not-allowed;}
+  #log{background:#000;border:1px solid #333;padding:16px;min-height:200px;font-size:.8rem;line-height:1.7;white-space:pre-wrap;max-height:500px;overflow-y:auto;}
+  .ok{color:#0f0;} .err{color:#f66;} .info{color:#66f;} .done{color:#ff0;}
+</style>
+</head>
+<body>
+<h1>⚡ Impact Bingo — Demo Session Seeder</h1>
+<p>Signs you in with Google, then creates a complete "Showcase Demo" session with 20 participants, a 3×3 grid, and ~50 realistic transactions. Run once — safe to re-run (will create a new session each time, not overwrite).</p>
+<button id="btnSeed" onclick="runSeed()">Sign In + Seed Demo</button>
+<div id="log">Ready. Click the button above to start.\n</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {
+  getFirestore, doc, setDoc, collection, addDoc, serverTimestamp, Timestamp
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import {
+  getAuth, signInWithPopup, GoogleAuthProvider
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+const firebaseConfig = {
+  apiKey:           "AIzaSyDKon9lKqQbypo27FqS8KVDSqfxgr4ON0c",
+  authDomain:       "learning-activities-kny.firebaseapp.com",
+  projectId:        "learning-activities-kny",
+  storageBucket:    "learning-activities-kny.firebasestorage.app",
+  messagingSenderId:"167106830334",
+  appId:            "1:167106830334:web:e7441ec23ba33f7f4eaaaf"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+const auth = getAuth(app);
+
+const logEl = document.getElementById('log');
+function log(msg, cls='') {
+  logEl.innerHTML += `<span class="${cls}">${msg}</span>\n`;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+// ── DATA ──────────────────────────────────────────────────────────────────────
+
+const NICKS = [
+  'ARIA','BENNY','CASS','DAN','EVA',
+  'FARHAN','GIA','HARIS','IRIS','JASON',
+  'KIRA','LEO','MEI','NADIA','OBI',
+  'PRIYA','QUINN','RAFI','SAM','TARA'
+];
+
+const CRITERIA = [
+  { id:1, criteria:'Go-to person in a crisis',                      theme:'Recognition' },
+  { id:2, criteria:'Makes every teammate feel included',             theme:'Recognition' },
+  { id:3, criteria:'Stays calm under extreme pressure',              theme:'Recognition' },
+  { id:4, criteria:'Lights up every room they walk into',           theme:'Recognition' },
+  { id:5, criteria:'Remembers birthdays and milestones for everyone',theme:'Recognition' },
+  { id:6, criteria:'Brings out the best in others',                  theme:'Recognition' },
+  { id:7, criteria:'The person everyone calls when they need cheering up', theme:'Recognition' },
+  { id:8, criteria:'Most punctual person in any meeting',            theme:'Recognition' },
+  { id:9, criteria:'The glue that holds the team together',          theme:'Recognition' },
+];
+
+// Manually designed participant states (balance AFTER all transactions resolve)
+// Lines 0–3 for a 3×3 grid; higher balance = more active trader
+const PARTICIPANTS = [
+  { nick:'PRIYA',  balance:2180, lines:3 },
+  { nick:'DAN',    balance:2050, lines:3 },
+  { nick:'ARIA',   balance:1870, lines:3 },
+  { nick:'KIRA',   balance:1790, lines:3 },
+  { nick:'TARA',   balance:1640, lines:3 },
+  { nick:'OBI',    balance:1550, lines:2 },
+  { nick:'SAM',    balance:1460, lines:2 },
+  { nick:'FARHAN', balance:1380, lines:2 },
+  { nick:'HARIS',  balance:1290, lines:2 },
+  { nick:'IRIS',   balance:1200, lines:2 },
+  { nick:'MEI',    balance:1150, lines:2 },
+  { nick:'RAFI',   balance:1080, lines:2 },
+  { nick:'BENNY',  balance:1010, lines:1 },
+  { nick:'CASS',   balance:960,  lines:1 },
+  { nick:'LEO',    balance:920,  lines:1 },
+  { nick:'GIA',    balance:880,  lines:1 },
+  { nick:'NADIA',  balance:840,  lines:1 },
+  { nick:'EVA',    balance:780,  lines:1 },
+  { nick:'QUINN',  balance:710,  lines:1 },
+  { nick:'JASON',  balance:640,  lines:0 },
+];
+
+// Pre-designed transactions — realistic mix (claimed & pending)
+// Timestamps are minutes-ago from "now" (we'll convert to Timestamp)
+// Format: [buyer, seller, criteriaId, amount, claimed, minutesAgo]
+const TX_BLUEPRINT = [
+  // ── Hour 1 (60-120 min ago) ──
+  ['BENNY',  'PRIYA',  1, 150, true,  118],
+  ['EVA',    'ARIA',   4, 100, true,  115],
+  ['JASON',  'DAN',    9, 200, true,  112],
+  ['NADIA',  'KIRA',   6, 125, true,  110],
+  ['GIA',    'TARA',   3, 75,  true,  108],
+  ['QUINN',  'OBI',    7, 100, true,  105],
+  ['LEO',    'SAM',    2, 150, true,  103],
+  ['CASS',   'FARHAN', 5, 100, true,  100],
+  ['EVA',    'HARIS',  8, 75,  true,  97 ],
+  ['JASON',  'IRIS',   1, 125, true,  95 ],
+  ['BENNY',  'MEI',    4, 50,  true,  93 ],
+  ['GIA',    'RAFI',   6, 100, true,  90 ],
+  ['NADIA',  'PRIYA',  9, 75,  true,  88 ],
+  ['QUINN',  'DAN',    3, 200, true,  85 ],
+  ['LEO',    'ARIA',   7, 100, true,  83 ],
+  // ── Hour 2 (30-60 min ago) ──
+  ['CASS',   'KIRA',   2, 150, true,  58 ],
+  ['EVA',    'TARA',   5, 125, true,  56 ],
+  ['JASON',  'OBI',    8, 100, true,  54 ],
+  ['BENNY',  'SAM',    1, 75,  true,  52 ],
+  ['GIA',    'FARHAN', 4, 150, true,  50 ],
+  ['NADIA',  'HARIS',  6, 125, false, 48 ],  // unclaimed
+  ['QUINN',  'IRIS',   9, 100, true,  46 ],
+  ['LEO',    'MEI',    3, 75,  true,  44 ],
+  ['CASS',   'RAFI',   7, 100, false, 42 ],  // unclaimed
+  ['ARIA',   'PRIYA',  2, 150, true,  40 ],
+  ['DAN',    'KIRA',   5, 200, true,  38 ],
+  ['TARA',   'ARIA',   8, 125, true,  36 ],
+  ['OBI',    'DAN',    1, 100, true,  34 ],
+  ['SAM',    'TARA',   4, 150, false, 32 ],  // unclaimed
+  ['FARHAN', 'OBI',    6, 75,  true,  30 ],
+  // ── Last 30 min ──
+  ['HARIS',  'SAM',    9, 125, true,  28 ],
+  ['IRIS',   'FARHAN', 3, 100, true,  26 ],
+  ['MEI',    'HARIS',  7, 150, true,  24 ],
+  ['RAFI',   'IRIS',   2, 75,  false, 22 ],  // unclaimed
+  ['PRIYA',  'MEI',    5, 100, true,  20 ],
+  ['KIRA',   'RAFI',   8, 125, true,  18 ],
+  ['DAN',    'BENNY',  1, 200, true,  16 ],
+  ['ARIA',   'CASS',   4, 150, true,  14 ],
+  ['TARA',   'LEO',    6, 100, false, 12 ],  // unclaimed
+  ['OBI',    'GIA',    9, 75,  true,  10 ],
+  ['SAM',    'NADIA',  3, 125, true,  8  ],
+  ['FARHAN', 'QUINN',  7, 100, true,  6  ],
+  ['HARIS',  'JASON',  2, 150, false, 5  ],  // unclaimed (most recent — debrief focus)
+  ['IRIS',   'EVA',    5, 75,  false, 4  ],  // unclaimed
+  ['MEI',    'BENNY',  8, 100, true,  3  ],
+  ['RAFI',   'CASS',   1, 125, true,  2  ],
+  ['PRIYA',  'LEO',    4, 200, true,  1  ],
+];
+
+// ── SEEDER ────────────────────────────────────────────────────────────────────
+
+window.runSeed = async function() {
+  const btn = document.getElementById('btnSeed');
+  btn.disabled = true;
+  logEl.innerHTML = '';
+
+  try {
+    // 1. Sign in
+    log('Signing in with Google…', 'info');
+    const provider = new GoogleAuthProvider();
+    const cred = await signInWithPopup(auth, provider);
+    const user = cred.user;
+    log(`✓ Signed in as ${user.email}`, 'ok');
+
+    // 2. Create session
+    log('\nCreating session…', 'info');
+    const sessionRef = await addDoc(collection(db, 'sessions'), {
+      facilitatorId:    user.uid,
+      facilitatorEmail: user.email,
+      sessionName:      'Showcase Demo — Recognition Workshop',
+      roomCode:         'DEMO26',
+      gridSize:         3,
+      passcode:         '2026',
+      date:             '14 May 2026',
+      venue:            'Grand Hyatt KL, Ballroom A',
+      status:           'active',
+      phase:            'active',
+      reflectionQuestions: [
+        'Which square was the hardest for you to sell — and what does that tell you?',
+        'What did you discover about your own value that you tend to underestimate?'
+      ],
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    const sessionId = sessionRef.id;
+    log(`✓ Session created: ${sessionId}`, 'ok');
+
+    // 3. Criteria
+    log('\nWriting 9 criteria…', 'info');
+    for (const c of CRITERIA) {
+      await setDoc(doc(db, 'sessions', sessionId, 'criteria', String(c.id)), c);
+    }
+    log('✓ Criteria written', 'ok');
+
+    // 4. Participants (user docs)
+    log('\nCreating 20 participant records…', 'info');
+    for (const p of PARTICIPANTS) {
+      await setDoc(doc(db, 'sessions', sessionId, 'users', p.nick), {
+        balance: p.balance,
+        lines:   p.lines,
+        joinedAt: serverTimestamp(),
+      });
+      log(`  · ${p.nick} — ${p.balance} pts, ${p.lines} lines`, 'ok');
+    }
+
+    // 5. Transactions
+    log('\nWriting transactions…', 'info');
+    const now = Date.now();
+    for (const [buyer, seller, critId, amount, claimed, minsAgo] of TX_BLUEPRINT) {
+      const tsMs = now - minsAgo * 60 * 1000;
+      const ts   = Timestamp.fromMillis(tsMs);
+      const crit = CRITERIA.find(c => c.id === critId);
+      const txData = {
+        action:    'BUY',
+        buyer,
+        seller,
+        criteria:  crit?.criteria || '',
+        boxId:     critId,
+        amount,
+        claimed,
+        timestamp: ts,
+      };
+      if (claimed) txData.claimedAt = Timestamp.fromMillis(tsMs + 2 * 60 * 1000);
+      await addDoc(collection(db, 'sessions', sessionId, 'transactions'), txData);
+    }
+    log(`✓ ${TX_BLUEPRINT.length} transactions written`, 'ok');
+
+    // 6. Done subcollection (each participant's completed boxes — for leaderboard accuracy)
+    log('\nWriting done subcollections…', 'info');
+    // 3x3: boxes 1-9, line = 3 in a row. Assign deterministically.
+    // lines=3: all 9 boxes  lines=2: 6 boxes  lines=1: 3 boxes  lines=0: 0 boxes
+    const LINE_BOXES = {
+      0: [],
+      1: [1, 2, 3],
+      2: [1, 2, 3, 4, 5, 6],
+      3: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    };
+    for (const p of PARTICIPANTS) {
+      const boxes = LINE_BOXES[p.lines] || [];
+      for (const boxId of boxes) {
+        await setDoc(
+          doc(db, 'sessions', sessionId, 'users', p.nick, 'done', String(boxId)),
+          { doneAt: serverTimestamp(), boxId }
+        );
+      }
+    }
+    log('✓ Done subcollections written', 'ok');
+
+    log(`\n${'═'.repeat(52)}`, 'done');
+    log('SESSION READY', 'done');
+    log(`${'═'.repeat(52)}`, 'done');
+    log(`Session ID : ${sessionId}`, 'done');
+    log(`Room Code  : DEMO26`, 'done');
+    log(`Dashboard  : /impactbingo/dashboard?session=${sessionId}`, 'done');
+    log(`Facilitator: /impactbingo/facilitator/`, 'done');
+    log(`\nStats:`, 'done');
+    log(`  20 players · 3×3 grid · ${TX_BLUEPRINT.length} trades`, 'done');
+    const unclaimedCount = TX_BLUEPRINT.filter(t => !t[4]).length;
+    log(`  ${TX_BLUEPRINT.length - unclaimedCount} claimed · ${unclaimedCount} unclaimed`, 'done');
+    log(`  Claim rate: ${Math.round((1 - unclaimedCount/TX_BLUEPRINT.length)*100)}%`, 'done');
+
+  } catch(e) {
+    log(`\n✗ ERROR: ${e.message}`, 'err');
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+  }
+};
+</script>
+</body>
+</html>

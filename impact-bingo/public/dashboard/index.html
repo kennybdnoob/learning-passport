@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Impact Bingo — Live Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#000033;--navy-mid:#0a0a4a;--navy-light:#1a1a6e;
+  --yellow:#FFCC00;--yellow-glow:rgba(255,204,0,0.4);
+  --purple:#660099;--purple-glow:rgba(102,0,153,0.45);--purple-light:#9933cc;
+  --glass-bg:rgba(255,255,255,0.06);--glass-border:rgba(255,255,255,0.12);
+  --glass-shine:rgba(255,255,255,0.2);
+  --text:#ffffff;--text-sec:rgba(255,255,255,0.65);--text-muted:rgba(255,255,255,0.35);
+  --green:#22dd66;--red:#ff6060;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--navy);color:var(--text);}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 50% at 15% 15%,rgba(102,0,153,0.3) 0%,transparent 60%),radial-gradient(ellipse 50% 40% at 85% 85%,rgba(255,204,0,0.15) 0%,transparent 55%),radial-gradient(ellipse 40% 50% at 50% 50%,rgba(26,26,110,0.6) 0%,transparent 80%);pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 1px 1px,rgba(255,255,255,0.03) 1px,transparent 0);background-size:28px 28px;pointer-events:none;z-index:0;}
+
+/* SESSION PICKER */
+.picker{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;padding:24px;position:relative;z-index:1;}
+.picker-box{background:rgba(10,10,60,0.9);backdrop-filter:blur(40px);border:1px solid var(--glass-border);border-radius:24px;padding:40px;width:100%;max-width:440px;box-shadow:0 32px 80px rgba(0,0,0,0.6);}
+.picker-box h2{font-family:'Unbounded',sans-serif;font-size:1.3rem;font-weight:900;margin-bottom:8px;color:var(--yellow);}
+.picker-box p{color:var(--text-sec);margin-bottom:24px;font-size:.95rem;}
+select{width:100%;padding:13px 16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:1rem;font-weight:600;color:var(--text);outline:none;margin-bottom:16px;}
+select option{background:var(--navy-mid);}
+button{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;border:none;border-radius:10px;padding:13px 20px;cursor:pointer;width:100%;font-size:1rem;background:linear-gradient(135deg,var(--purple),var(--purple-light));color:white;box-shadow:0 4px 16px var(--purple-glow);}
+
+/* DASHBOARD LAYOUT */
+.session-bar{display:none;background:rgba(0,0,51,0.85);backdrop-filter:blur(24px);border-bottom:1px solid var(--glass-border);padding:10px 20px;z-index:100;align-items:center;justify-content:space-between;gap:16px;}
+.session-bar.visible{display:flex;}
+.session-title{font-family:'Unbounded',sans-serif;font-size:clamp(.7rem,1.5vw,1rem);font-weight:900;color:var(--yellow);text-shadow:0 0 16px var(--yellow-glow);white-space:nowrap;}
+.session-meta{font-size:clamp(.65rem,1.2vw,.85rem);font-weight:600;color:var(--text-sec);}
+.session-logo{max-height:36px;max-width:100px;object-fit:contain;filter:brightness(0) invert(1);opacity:.85;}
+.dashboard{display:none;height:calc(100vh - 57px);width:100vw;position:relative;z-index:1;padding:12px;gap:12px;
+  grid-template-columns:1fr 1fr;
+  grid-template-rows:1fr 300px;
+}
+.dashboard.visible{display:grid;}
+
+/* PANELS */
+.panel{background:var(--glass-bg);backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:16px;padding:20px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 4px 24px rgba(0,0,0,0.3),inset 0 1px 0 var(--glass-shine);position:relative;}
+.panel::before{content:'';position:absolute;top:0;left:15%;right:15%;height:1px;background:linear-gradient(90deg,transparent,var(--glass-shine),transparent);}
+
+.panel-title{font-family:'Unbounded',sans-serif;font-size:clamp(.6rem,1.2vw,.85rem);font-weight:900;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:14px;flex-shrink:0;}
+
+
+
+/* TRANSACTION FEED */
+.feed{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;}
+.feed::-webkit-scrollbar{width:3px;}
+.feed::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:2px;}
+.tx-item{background:rgba(255,255,255,0.04);border-radius:10px;padding:12px 14px;border-left:3px solid transparent;animation:txIn .4s ease both;}
+.tx-item.buy{border-left-color:var(--purple-light);}
+.tx-item.claimed{border-left-color:var(--green);}
+.tx-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.tx-players{font-size:clamp(.75rem,1.4vw,1rem);font-weight:800;}
+.tx-amount{font-family:'Unbounded',sans-serif;font-size:clamp(.7rem,1.3vw,.9rem);font-weight:900;}
+.tx-amount.buy{color:var(--purple-light);}
+.tx-amount.claimed{color:var(--green);}
+.tx-criteria{font-size:clamp(.6rem,1.1vw,.8rem);font-weight:600;color:var(--text-sec);}
+.tx-time{font-size:clamp(.55rem,1vw,.72rem);color:var(--text-muted);font-weight:600;}
+@keyframes txIn{from{opacity:0;transform:translateX(-10px);}to{opacity:1;transform:translateX(0);}}
+
+/* CLAIM RATE METER */
+.claim-meter{height:4px;background:rgba(255,255,255,0.08);border-radius:2px;margin-bottom:4px;overflow:hidden;flex-shrink:0;}
+.claim-meter-bar{height:100%;background:linear-gradient(90deg,var(--purple-light),var(--green));border-radius:2px;transition:width 1s ease;width:0%;}
+.claim-rate-lbl{font-size:.6rem;font-weight:800;color:var(--text-muted);margin-bottom:8px;letter-spacing:.3px;flex-shrink:0;}
+
+/* FREEZE WARNING */
+.freeze-lbl{font-size:.65rem;font-weight:800;color:#ff8c00;min-height:1em;margin-bottom:4px;flex-shrink:0;}
+@keyframes freezePulse{
+  0%,100%{border-color:var(--glass-border);box-shadow:0 4px 24px rgba(0,0,0,0.3),inset 0 1px 0 var(--glass-shine);}
+  50%{border-color:rgba(255,140,0,0.55);box-shadow:0 0 28px rgba(255,140,0,0.2),0 4px 24px rgba(0,0,0,0.3),inset 0 1px 0 var(--glass-shine);}
+}
+.panel.frozen{animation:freezePulse 2s ease-in-out infinite;}
+
+/* LEADERBOARD PODIUM ANIMATIONS */
+@keyframes podiumFlash{0%{background:rgba(255,204,0,0.38);}100%{background:rgba(255,204,0,0.07);}}
+@keyframes pulseGold{
+  0%,100%{box-shadow:0 0 0 rgba(255,204,0,0);}
+  50%{box-shadow:0 0 24px rgba(255,204,0,0.3);}
+}
+.lb-row.rank1{animation:pulseGold 2.5s ease-in-out infinite;}
+.lb-row.flash{animation:podiumFlash 1.2s ease-out forwards!important;}
+
+/* LEADERBOARD */
+.lb-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;}
+.lb-list::-webkit-scrollbar{width:3px;}
+.lb-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:2px;}
+.lb-row{display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:10px;}
+.lb-row.top3{background:rgba(255,204,0,0.07);border:1px solid rgba(255,204,0,0.15);}
+.lb-rank{font-family:'Unbounded',sans-serif;font-weight:900;font-size:clamp(.75rem,1.4vw,1rem);width:28px;text-align:center;flex-shrink:0;}
+.lb-rank.gold{color:var(--yellow);text-shadow:0 0 12px var(--yellow-glow);}
+.lb-rank.silver{color:#c0c0c0;}
+.lb-rank.bronze{color:#cd7f32;}
+.lb-name{font-size:clamp(.75rem,1.5vw,1.05rem);font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lb-lines{font-size:clamp(.6rem,1.1vw,.78rem);color:var(--text-sec);font-weight:600;}
+.lb-score{font-family:'Unbounded',sans-serif;font-size:clamp(.7rem,1.4vw,.95rem);font-weight:900;color:var(--yellow);text-align:right;}
+.lb-bar{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:5px;overflow:hidden;}
+.lb-bar-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--yellow));border-radius:2px;transition:width .8s ease;}
+
+/* BOTTOM PANELS */
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;overflow:hidden;}
+
+/* MOST RARE / COMMON / TRENDS */
+.insight-box{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:10px;}
+.insight-card{background:rgba(255,255,255,0.04);border-radius:10px;padding:14px;flex:1;display:flex;flex-direction:column;justify-content:center;}
+.insight-label{font-size:clamp(.55rem,1vw,.72rem);font-weight:800;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
+.insight-label.rare{color:#ff8080;}
+.insight-label.common{color:var(--green);}
+.insight-label.trend{color:var(--yellow);}
+.insight-text{font-size:clamp(.7rem,1.3vw,.92rem);font-weight:700;color:var(--text);line-height:1.35;}
+.trend-bar{display:flex;gap:3px;margin-top:8px;align-items:flex-end;height:32px;}
+.trend-seg{flex:1;background:rgba(255,204,0,0.3);border-radius:2px 2px 0 0;min-height:4px;transition:height .5s ease;}
+
+/* TOP SALES GRID */
+.sales-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:1;}
+.sale-cell{background:rgba(255,255,255,0.04);border-radius:10px;padding:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border:1px solid rgba(255,255,255,0.06);}
+.sale-cell.top1{background:rgba(255,204,0,0.1);border-color:rgba(255,204,0,0.25);}
+.sale-amount{font-family:'Unbounded',sans-serif;font-size:clamp(.75rem,1.5vw,1.1rem);font-weight:900;color:var(--yellow);}
+.sale-name{font-size:clamp(.6rem,1.1vw,.8rem);font-weight:700;color:var(--text-sec);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
+</style>
+</head>
+<body>
+
+<!-- SESSION BAR (replaces center circle) -->
+<div class="session-bar" id="sessionBar">
+  <div class="session-title" id="barTitle">IMPACT BINGO</div>
+  <div class="session-meta" id="barMeta"></div>
+  <img id="barLogo" class="session-logo" style="display:none" alt="">
+</div>
+
+<!-- SESSION PICKER -->
+<div class="picker" id="picker">
+  <div class="picker-box">
+    <h2>Live Dashboard</h2>
+    <p>Select an active session to monitor.</p>
+    <select id="sessionSelect"></select>
+    <button onclick="loadDashboard()">Open Dashboard</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard" id="dashboard">
+
+  <!-- TOP LEFT: TRANSACTION FEED -->
+  <div class="panel" style="grid-column:1;grid-row:1" id="feedPanel">
+    <div class="panel-title">🔴 Live Transactions</div>
+    <div class="claim-meter"><div class="claim-meter-bar" id="claimMeterBar"></div></div>
+    <div class="claim-rate-lbl" id="claimRateLbl">⚡ waiting for trades…</div>
+    <div class="freeze-lbl" id="freezeLbl"></div>
+    <div class="feed" id="feed">
+      <p style="color:var(--text-muted);font-size:.85rem">Waiting for transactions…</p>
+    </div>
+  </div>
+
+  <!-- TOP RIGHT: LEADERBOARD -->
+  <div class="panel" style="grid-column:2;grid-row:1">
+    <div class="panel-title">🏆 High Score Leaderboard</div>
+    <div class="lb-list" id="leaderboard">
+      <p style="color:var(--text-muted);font-size:.85rem">Waiting for players…</p>
+    </div>
+  </div>
+
+  <!-- BOTTOM LEFT: INSIGHTS (RARE + COMMON + TRENDS) -->
+  <div class="panel" style="grid-column:1;grid-row:2">
+    <div class="panel-title">📊 Market Intelligence</div>
+    <div class="insight-box">
+      <div class="insight-card">
+        <div class="insight-label rare">🔴 Most Rare</div>
+        <div class="insight-text" id="mostRare">—</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-label common">🟢 Most Common</div>
+        <div class="insight-text" id="mostCommon">—</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-label trend">🔥 Trending Now</div>
+        <div class="insight-text" id="trending">—</div>
+        <div class="trend-bar" id="trendBar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM RIGHT: TOP SALES -->
+  <div class="panel" style="grid-column:2;grid-row:2">
+    <div class="panel-title">✅ Top Claimers</div>
+    <div class="sales-grid" id="salesGrid">
+      <p style="color:var(--text-muted);font-size:.85rem;grid-column:1/-1">Waiting…</p>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore,collection,doc,getDoc,getDocs,query,where,orderBy,limit,onSnapshot }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const firebaseConfig={
+  apiKey:"AIzaSyDKon9lKqQbypo27FqS8KVDSqfxgr4ON0c",
+  authDomain:"learning-activities-kny.firebaseapp.com",
+  projectId:"learning-activities-kny",
+  storageBucket:"learning-activities-kny.firebasestorage.app",
+  messagingSenderId:"167106830334",
+  appId:"1:167106830334:web:e7441ec23ba33f7f4eaaaf",
+  measurementId:"G-C6WJYRYE1B"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+let sessionId=null,sessionData=null,gridSize=4,gridData=[];
+let unsubTx=null,unsubUsers=null;
+let allTransactions=[];
+let prevTopThree=[];
+let lastTxTime=0;
+let freezeInterval=null;
+
+// CHECK URL PARAM
+const urlParams=new URLSearchParams(window.location.search);
+const urlSession=urlParams.get('session');
+if(urlSession){ sessionId=urlSession; initDashboard(); }
+else { loadActiveSessions(); }
+
+// LOAD ACTIVE SESSIONS
+async function loadActiveSessions(){
+  const q=query(collection(db,'sessions'),where('status','==','active'));
+  const snap=await getDocs(q);
+  const sel=document.getElementById('sessionSelect');
+  if(snap.empty){ sel.innerHTML='<option>No active sessions</option>'; return; }
+  sel.innerHTML='';
+  snap.forEach(d=>{
+    const s=d.data();
+    sel.innerHTML+=`<option value="${d.id}">${s.sessionName} (${s.roomCode})</option>`;
+  });
+}
+
+window.loadDashboard=async function(){
+  sessionId=document.getElementById('sessionSelect').value;
+  if(!sessionId){ return; }
+  initDashboard();
+};
+
+async function initDashboard(){
+  // Load session
+  const snap=await getDoc(doc(db,'sessions',sessionId));
+  if(!snap.exists()){ alert('Session not found'); return; }
+  sessionData=snap.data();
+  gridSize=sessionData.gridSize||4;
+
+  // Load criteria
+  const critSnap=await getDocs(collection(db,'sessions',sessionId,'criteria'));
+  gridData=critSnap.docs.map(d=>d.data()).sort((a,b)=>a.id-b.id);
+
+  // Setup session bar
+  document.getElementById('barTitle').textContent=
+    `IMPACT BINGO  ·  ${sessionData.sessionName||''}`;
+  const metaParts=[sessionData.date,sessionData.venue].filter(Boolean);
+  document.getElementById('barMeta').textContent=metaParts.join('  ·  ');
+  if(sessionData.clientLogoUrl){
+    const logo=document.getElementById('barLogo');
+    logo.src=sessionData.clientLogoUrl; logo.style.display='block';
+  }
+
+  document.getElementById('picker').style.display='none';
+  document.getElementById('sessionBar').classList.add('visible');
+  document.getElementById('dashboard').classList.add('visible');
+
+  // Subscribe to transactions
+  const txQuery=query(collection(db,'sessions',sessionId,'transactions'),orderBy('timestamp','desc'),limit(100));
+  unsubTx=onSnapshot(txQuery,snap=>{
+    allTransactions=snap.docs.map(d=>({id:d.id,...d.data()}));
+    // Track latest tx time for freeze detection
+    const latest=allTransactions[0];
+    if(latest?.timestamp?.toDate) lastTxTime=latest.timestamp.toDate().getTime();
+    else if(!lastTxTime) lastTxTime=Date.now();
+    renderFeed(allTransactions.slice(0,20));
+    renderInsights(allTransactions);
+    renderTopClaimers(allTransactions);
+    renderClaimRate(allTransactions);
+    checkFreeze();
+  });
+
+  // Freeze checker — re-run every 30s
+  if(freezeInterval) clearInterval(freezeInterval);
+  freezeInterval=setInterval(checkFreeze,30000);
+
+  // Subscribe to users for leaderboard
+  const usersQuery=query(collection(db,'sessions',sessionId,'users'));
+  unsubUsers=onSnapshot(usersQuery,snap=>{
+    const users=snap.docs.map(d=>({nick:d.id,...d.data()}));
+    renderLeaderboard(users);
+  });
+}
+
+// TRANSACTION FEED
+function renderFeed(txs){
+  const feed=document.getElementById('feed');
+  const buys=txs.filter(t=>t.action==='BUY');
+  if(!buys.length){ feed.innerHTML='<p style="color:var(--text-muted);font-size:.85rem">Waiting for transactions…</p>'; return; }
+  feed.innerHTML=buys.map(tx=>{
+    const claimed=tx.claimed===true;
+    const time=tx.timestamp?.toDate?timeAgo(tx.timestamp.toDate()):'just now';
+    const badge=claimed
+      ?`<span style="background:rgba(34,221,102,0.15);color:var(--green);border:1px solid rgba(34,221,102,0.3);border-radius:4px;font-size:.62rem;font-weight:800;padding:2px 7px;letter-spacing:.5px;flex-shrink:0">✓ CLAIMED</span>`
+      :`<span style="background:rgba(255,204,0,0.1);color:var(--yellow);border:1px solid rgba(255,204,0,0.25);border-radius:4px;font-size:.62rem;font-weight:800;padding:2px 7px;letter-spacing:.5px;flex-shrink:0">⏳ PENDING</span>`;
+    return `
+      <div class="tx-item ${claimed?'claimed':'buy'}">
+        <div class="tx-top">
+          <div class="tx-players" style="display:flex;align-items:center;gap:7px;flex:1;overflow:hidden">
+            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="color:#cc88ff">${esc(tx.buyer)}</span> ← <span style="color:var(--yellow)">${esc(tx.seller)}</span></span>
+            ${badge}
+          </div>
+          <div class="tx-amount ${claimed?'claimed':'buy'}" style="margin-left:8px;flex-shrink:0">${tx.amount?.toLocaleString()} pts</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="tx-criteria">${esc(tx.criteria?.substring(0,50)||'')}${tx.criteria?.length>50?'…':''}</div>
+          <div class="tx-time">${time}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// LEADERBOARD
+function renderLeaderboard(users){
+  if(!users.length){ document.getElementById('leaderboard').innerHTML='<p style="color:var(--text-muted);font-size:.85rem">Waiting for players…</p>'; return; }
+
+  const scored=users.map(u=>{
+    const lines=u.lines||0;
+    const mult=lines*0.3;
+    const final=Math.round((u.balance||0)*mult);
+    return {...u,lines,mult,final};
+  }).sort((a,b)=>b.final-a.final).slice(0,10);
+
+  const maxScore=scored[0]?.final||1;
+  const rankColors=['gold','silver','bronze'];
+  const newTopThree=scored.slice(0,3).map(u=>u.nick);
+
+  document.getElementById('leaderboard').innerHTML=scored.map((u,i)=>{
+    const isNewToTop3=i<3 && prevTopThree.length>0 && !prevTopThree.includes(u.nick);
+    const cls=[
+      i<3?'top3':'',
+      i===0?'rank1':'',
+      isNewToTop3?'flash':''
+    ].filter(Boolean).join(' ');
+    return `
+    <div class="lb-row ${cls}">
+      <div class="lb-rank ${rankColors[i]||''}">${i<3?['🥇','🥈','🥉'][i]:i+1}</div>
+      <div style="flex:1;min-width:0">
+        <div class="lb-name">${esc(u.nick)}</div>
+        <div class="lb-lines">${u.lines} line${u.lines!==1?'s':''} · ×${u.mult.toFixed(1)} · ${(u.balance||0).toLocaleString()} pts</div>
+        <div class="lb-bar"><div class="lb-bar-fill" style="width:${Math.max(4,(u.final/maxScore)*100)}%"></div></div>
+      </div>
+      <div class="lb-score">${u.final.toLocaleString()}</div>
+    </div>`;
+  }).join('');
+
+  prevTopThree=newTopThree;
+}
+
+// INSIGHTS
+function renderInsights(txs){
+  const buys=txs.filter(t=>t.action==='BUY');
+
+  // Count by criteria
+  const counts={};
+  buys.forEach(t=>{ counts[t.criteria]=(counts[t.criteria]||0)+1; });
+  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+
+  if(sorted.length){
+    document.getElementById('mostCommon').textContent=sorted[0][0]?.substring(0,60)||'—';
+    document.getElementById('mostRare').textContent=sorted[sorted.length-1][0]?.substring(0,60)||'—';
+  }
+
+  // Trending: most bought in last 10 transactions
+  const last10=buys.slice(0,10);
+  const trendCounts={};
+  last10.forEach(t=>{ trendCounts[t.criteria]=(trendCounts[t.criteria]||0)+1; });
+  const trendSorted=Object.entries(trendCounts).sort((a,b)=>b[1]-a[1]);
+  if(trendSorted.length){
+    document.getElementById('trending').textContent=trendSorted[0][0]?.substring(0,60)||'—';
+    // Trend bar: show relative frequency of top 5 trending
+    const top5=trendSorted.slice(0,5);
+    const maxT=top5[0]?.[1]||1;
+    document.getElementById('trendBar').innerHTML=top5.map(([,v])=>
+      `<div class="trend-seg" style="height:${Math.max(4,(v/maxT)*32)}px"></div>`
+    ).join('');
+  }
+}
+
+// TOP CLAIMERS — sellers who have had their transactions claimed
+function renderTopClaimers(txs){
+  const claimed=txs.filter(t=>t.action==='BUY'&&t.claimed===true);
+  const totals={};
+  claimed.forEach(t=>{ totals[t.seller]=(totals[t.seller]||0)+(t.amount||0); });
+  const sorted=Object.entries(totals).sort((a,b)=>b[1]-a[1]).slice(0,9);
+
+  const grid=document.getElementById('salesGrid');
+  if(!sorted.length){ grid.innerHTML='<p style="color:var(--text-muted);font-size:.85rem;grid-column:1/-1">No claims yet…</p>'; return; }
+
+  grid.innerHTML=sorted.map(([name,total],i)=>`
+    <div class="sale-cell ${i===0?'top1':''}">
+      <div class="sale-amount">${total.toLocaleString()}</div>
+      <div class="sale-name">${esc(name)}</div>
+    </div>
+  `).join('');
+}
+
+// CLAIM RATE METER
+function renderClaimRate(txs){
+  const buys=txs.filter(t=>t.action==='BUY');
+  const claimedCount=buys.filter(t=>t.claimed===true).length;
+  const rate=buys.length?Math.round((claimedCount/buys.length)*100):0;
+  document.getElementById('claimMeterBar').style.width=rate+'%';
+  document.getElementById('claimRateLbl').textContent=
+    buys.length?`⚡ ${rate}% of ${buys.length} trades claimed (${claimedCount}/${buys.length})`:`⚡ waiting for trades…`;
+}
+
+// MARKET FREEZE DETECTION
+function checkFreeze(){
+  if(!lastTxTime) return;
+  const mins=Math.floor((Date.now()-lastTxTime)/60000);
+  const panel=document.getElementById('feedPanel');
+  const lbl=document.getElementById('freezeLbl');
+  if(!panel||!lbl) return;
+  if(mins>=3){
+    panel.classList.add('frozen');
+    lbl.textContent=`💤 Market quiet — ${mins}m since last trade`;
+  } else {
+    panel.classList.remove('frozen');
+    lbl.textContent='';
+  }
+}
+
+// HELPERS
+function timeAgo(date){
+  const s=Math.floor((Date.now()-date)/1000);
+  if(s<10) return 'just now';
+  if(s<60) return `${s}s ago`;
+  if(s<3600) return `${Math.floor(s/60)}m ago`;
+  return `${Math.floor(s/3600)}h ago`;
+}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>

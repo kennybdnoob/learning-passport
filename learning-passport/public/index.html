@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Learning Passport</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1c1a17;--ink-soft:#5a5249;--paper:#f4efe6;--card:#fffdf8;
+    --gold:#c9a227;--gold-deep:#a07e15;--line:#e5dccb;--accent-soft:#fbf4dd;--bad:#b4503a;--good:#3f7d52}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter Tight',system-ui,sans-serif;background:
+    radial-gradient(circle at 20% 0%,#efe7d6,transparent 55%),var(--paper);
+    color:var(--ink);min-height:100vh;-webkit-tap-highlight-color:transparent}
+  .wrap{max-width:440px;margin:0 auto;padding:26px 22px 60px;min-height:100vh;display:flex;flex-direction:column}
+  .screen{display:none;flex:1;flex-direction:column}
+  .screen.active{display:flex}
+  .topbar{display:flex;align-items:center;gap:12px;margin-bottom:6px;min-height:26px}
+  .back{font-size:26px;color:var(--ink-soft);cursor:pointer;line-height:1;padding:4px 10px 4px 0;margin-left:-4px}
+  .brandline{display:flex;align-items:center;gap:8px;font:700 13px 'Inter Tight';letter-spacing:.22em;text-transform:uppercase;color:var(--gold-deep)}
+  .seal{width:18px;height:18px;border-radius:50%;border:2px solid var(--gold);display:grid;place-items:center;font-size:9px;color:var(--gold-deep)}
+  h2{font-family:'Fraunces',serif;font-weight:600;font-size:27px;line-height:1.15;margin:12px 0 6px}
+  .sub{color:var(--ink-soft);font-size:14px;line-height:1.5}
+  label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.12em;margin:15px 0 6px}
+  input:not([type="checkbox"]),textarea{width:100%;background:#faf5ea;border:1.5px solid var(--line);border-radius:12px;
+    padding:13px 14px;font:500 15px 'Inter Tight';color:var(--ink);outline:none;-webkit-appearance:none}
+  input[type="checkbox"]{width:18px;height:18px;cursor:pointer;accent-color:var(--gold);flex:none}
+  textarea{min-height:150px;line-height:1.55;font-weight:400;resize:vertical}
+  input:focus,textarea:focus{border-color:var(--gold)}
+  .check{display:flex;gap:10px;align-items:flex-start;margin-top:16px;font-size:12.5px;color:var(--ink-soft);line-height:1.45}
+  .check input{width:auto;margin-top:2px}
+  button{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    background:var(--ink);color:#fdf8ec;border:none;border-radius:14px;padding:15px;
+    font:600 15px 'Inter Tight';margin-top:20px;cursor:pointer}
+  button.gold{background:var(--gold);color:#241c00}
+  button.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+  button.danger{background:transparent;color:var(--bad);border:1.5px solid #e6c5bc}
+  button:disabled{opacity:.55}
+  .msg{margin-top:13px;font-size:13px;min-height:18px}
+  .msg.err{color:var(--bad)}.msg.ok{color:var(--good)}
+  .link{color:var(--gold-deep);font-weight:600;text-align:center;font-size:13px;margin-top:16px;cursor:pointer}
+  .spacer{flex:1}
+  .pcard{background:linear-gradient(150deg,#201d17,#34291a 60%,#241d12);border-radius:22px;
+    padding:22px;color:#f6edd6;position:relative;overflow:hidden;margin-top:8px}
+  .pcard::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 85% 10%,rgba(201,162,39,.32),transparent 45%)}
+  .pc-top{display:flex;justify-content:space-between;font:700 10px 'Inter Tight';letter-spacing:.24em;text-transform:uppercase;color:#cbb887;position:relative}
+  .pc-id{display:flex;gap:16px;align-items:center;margin:18px 0 4px;position:relative}
+  .avatar{width:70px;height:70px;border-radius:50%;border:3px solid var(--gold);flex:none;
+    background:linear-gradient(135deg,#caa84e,#6c5a2a);display:grid;place-items:center;
+    font-family:'Fraunces',serif;font-size:24px;color:#1c1709;font-weight:600;overflow:hidden}
+  .avatar img,.av2 img,.selfie-ring img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+  .selfie-ring{width:120px;height:120px;border-radius:50%;border:3px solid var(--gold);
+    background:var(--accent-soft);display:grid;place-items:center;margin:18px auto 6px;
+    overflow:hidden;cursor:pointer;font:600 13px 'Inter Tight';color:var(--gold-deep);text-align:center}
+  .pc-name{font-family:'Fraunces',serif;font-size:21px;font-weight:600;color:#fdf6e3}
+  .pc-role{font-size:12.5px;color:#cbbd97;margin-top:3px}
+  .pc-pill{position:absolute;top:0;right:0;background:var(--gold);color:#231a00;font:700 12px 'Inter Tight';padding:6px 11px;border-radius:999px}
+  .pc-meta{display:flex;justify-content:space-between;margin-top:18px;border-top:1px dashed rgba(255,255,255,.22);padding-top:13px;position:relative}
+  .pc-meta div{font-size:10px;color:#bdae88;text-transform:uppercase;letter-spacing:.1em}
+  .pc-meta b{display:block;font-size:13px;color:#f1e7ce;margin-top:3px;text-transform:none;font-weight:600}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+  .tile{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:15px;cursor:pointer}
+  .tile.lit{border-color:var(--gold);background:linear-gradient(180deg,#fffdf6,#fdf3d8)}
+  .tile.soon{opacity:.62;cursor:default}
+  .tile .ic{width:34px;height:34px;border-radius:10px;background:var(--accent-soft);display:grid;place-items:center;font-size:17px;margin-bottom:10px}
+  .tile h4{font:600 14px 'Inter Tight'}
+  .tile .st{font-size:11.5px;color:var(--ink-soft);margin-top:3px}
+  .mini{background:linear-gradient(150deg,#201d17,#34291a 60%,#241d12);border-radius:16px;padding:15px 17px;
+    color:#f6edd6;display:flex;align-items:center;gap:14px;margin-bottom:13px;position:relative;overflow:hidden;cursor:pointer}
+  .mini::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 90% 0%,rgba(201,162,39,.28),transparent 50%)}
+  .mini .av2{width:44px;height:44px;border-radius:50%;border:2px solid var(--gold);flex:none;
+    background:linear-gradient(135deg,#caa84e,#6c5a2a);display:grid;place-items:center;font:600 15px 'Fraunces',serif;color:#1c1709;position:relative}
+  .mini .mt{flex:1;position:relative}
+  .mini .mt b{font-family:'Fraunces',serif;font-size:15px;color:#fdf6e3;display:block}
+  .mini .mt span{font-size:11px;color:#bdae88}
+  .mini .mst{font:700 9px 'Inter Tight';letter-spacing:.1em;text-transform:uppercase;color:#231a00;background:var(--gold);padding:3px 8px;border-radius:999px;position:relative}
+  .addcard{border:1.5px dashed var(--gold);border-radius:16px;padding:18px;text-align:center;color:var(--gold-deep);font-weight:600;font-size:14px;background:var(--accent-soft);cursor:pointer}
+  .addcard .pl{font-size:22px;display:block;margin-bottom:2px}
+  .qmeta{font:600 11px 'Inter Tight';letter-spacing:.16em;text-transform:uppercase;color:var(--gold-deep);margin-top:18px}
+  .qtext{font-family:'Fraunces',serif;font-size:20px;line-height:1.3;font-weight:600;margin:8px 0 12px}
+  .savenote{font-size:11.5px;color:var(--ink-soft);margin-top:9px}
+  .done-badge{background:#e6f1e8;color:var(--good);border-radius:12px;padding:14px;text-align:center;font-weight:600;font-size:14px;margin-top:18px}
+  .jl-item{display:flex;gap:13px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .jl-item .n{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font:600 12px 'Inter Tight';color:var(--ink-soft);flex:none}
+  .jl-item.done .n{background:var(--good);border-color:var(--good);color:#fff}
+  .jl-item .tt{flex:1}
+  .jl-item .tt b{font:600 14px 'Inter Tight';display:block}
+  .jl-item .tt span{font-size:12px;color:var(--ink-soft)}
+  .jl-item .ch{font:600 10px 'Inter Tight';text-transform:uppercase;letter-spacing:.07em;padding:4px 9px;border-radius:999px;background:var(--accent-soft);color:var(--gold-deep)}
+  .jl-item.done .ch{background:#e6f1e8;color:var(--good)}
+  .cert{border:2px solid var(--gold);border-radius:18px;padding:24px;text-align:center;background:linear-gradient(180deg,#fffdf6,#fcf3d9);margin-top:8px}
+  .cert-seal{width:46px;height:46px;border-radius:50%;background:var(--gold);margin:0 auto 12px;display:grid;place-items:center;color:#241c00;font-size:20px}
+  .cert-h{font-family:'Fraunces',serif;font-weight:600;font-size:20px}
+  .cert-who{font-family:'Fraunces',serif;font-size:24px;color:var(--gold-deep);margin:6px 0}
+  .cert-sub{font-size:12px;color:var(--ink-soft)}
+  .cert-line{font-size:13px;color:var(--ink-soft);line-height:1.55;font-style:italic;margin-top:10px}
+  .rsec{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px;margin-top:12px}
+  .rsh{font:700 11px 'Inter Tight';letter-spacing:.14em;text-transform:uppercase;color:var(--gold-deep);margin-bottom:6px}
+  .rsec p,.rsec div{font-size:13px;color:var(--ink-soft);line-height:1.55}
+  #repPdf{text-decoration:none;display:block}
+  .lb-row{display:flex;align-items:center;gap:13px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .lb-row .rk{width:26px;font-family:'Fraunces',serif;font-weight:600;font-size:15px;color:var(--ink-soft);text-align:center}
+  .lb-row .av{width:36px;height:36px;border-radius:50%;border:2px solid var(--gold);flex:none;background:linear-gradient(135deg,#caa84e,#6c5a2a);display:grid;place-items:center;font:600 13px 'Fraunces',serif;color:#1c1709}
+  .lb-row .nm{flex:1;font:600 14px 'Inter Tight'}
+  .lb-row .pt{font:700 14px 'Inter Tight';color:var(--gold-deep)}
+  .lb-row.me{background:var(--accent-soft);margin:0 -22px;padding:12px 22px;border:none;border-radius:10px}
+  .srow{display:flex;align-items:center;justify-content:space-between;padding:15px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+  .srow .l{display:flex;gap:12px;align-items:center;cursor:pointer}
+  .srow .l .ic{width:30px;height:30px;border-radius:8px;background:var(--accent-soft);display:grid;place-items:center;font-size:14px}
+  .srow.danger{color:var(--bad)}.srow.danger .ic{background:#fbe7e2;color:var(--bad)}
+  .env{position:fixed;top:8px;left:50%;transform:translateX(-50%);font:600 10px 'Inter Tight';
+    letter-spacing:.1em;text-transform:uppercase;color:var(--gold-deep);background:var(--accent-soft);
+    border:1px solid #ecdfb6;padding:3px 10px;border-radius:999px;z-index:9}
+  .empty{text-align:center;color:var(--ink-soft);font-size:14px;padding:30px 0}
+  .act-card{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+  .act-card .act-top{display:flex;align-items:flex-start;gap:13px}
+  .act-card .act-ic{width:38px;height:38px;border-radius:11px;background:var(--accent-soft);display:grid;place-items:center;font-size:18px;flex:none}
+  .act-card .act-info{flex:1}
+  .act-card .act-info b{font:600 15px 'Inter Tight';display:block}
+  .act-card .act-info span{font-size:12.5px;color:var(--ink-soft);line-height:1.45;display:block;margin-top:2px}
+  .act-card a.act-link{display:block;margin-top:11px;text-align:center;background:var(--ink);color:#fdf8ec;border-radius:11px;padding:11px;font:600 13px 'Inter Tight';text-decoration:none}
+  .rw-card{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:14px}
+  .rw-card .rw-ic{width:40px;height:40px;border-radius:12px;background:var(--accent-soft);display:grid;place-items:center;font-size:20px;flex:none}
+  .rw-card .rw-info{flex:1}
+  .rw-card .rw-info b{font:600 15px 'Inter Tight';display:block}
+  .rw-card .rw-info span{font-size:12.5px;color:var(--ink-soft)}
+  .rw-card .rw-act{font:600 12px 'Inter Tight';padding:8px 14px;border-radius:10px;border:1.5px solid transparent;cursor:pointer;white-space:nowrap}
+  .rw-card .rw-act.can{background:var(--gold);color:#241c00;border-color:var(--gold)}
+  .rw-card .rw-act.no{background:var(--line);color:var(--ink-soft);cursor:default}
+  .rw-card .rw-act.done{background:#e6f1e8;color:var(--good);cursor:default;border-color:#c3dfc9}
+</style>
+</head>
+<body>
+<div id="envtag" class="env" style="display:none"></div>
+<div class="wrap">
+
+  <!-- AUTH -->
+  <section id="s-auth" class="screen active">
+    <div class="brandline"><span class="seal">★</span> Learning Passport</div>
+    <h2>Welcome back — or hello.</h2>
+    <p class="sub">Enter your email &amp; password. New here? We'll create your account automatically.</p>
+    <label>Email</label><input id="email" type="email" autocomplete="email" placeholder="you@company.com">
+    <label>Password</label><input id="pass" type="password" autocomplete="current-password" placeholder="at least 6 characters">
+    <label class="check"><input id="consent" type="checkbox">
+      <span>I consent to my reflections generating my private learning report, and to being visible to my cohort.</span></label>
+    <div id="authMsg" class="msg"></div>
+    <button id="authBtn" class="gold">Continue</button>
+    <div class="link" id="forgotLink">Forgot password?</div>
+  </section>
+
+  <!-- PROFILE -->
+  <section id="s-profile" class="screen">
+    <div class="brandline"><span class="seal">★</span> Almost there</div>
+    <h2>Who are you?</h2>
+    <p class="sub">This appears on your passport card.</p>
+    <div class="selfie-ring" id="selfieRing">Tap to<br>add photo</div>
+    <p class="sub" style="text-align:center;font-size:12px">Optional — becomes your passport portrait.</p>
+    <label>Display name</label><input id="pName" type="text" placeholder="Aisha Rahman">
+    <label>Position</label><input id="pPos" type="text" placeholder="Head of People, Aurora Group">
+    <div id="profMsg" class="msg"></div>
+    <button id="profBtn" class="gold">Save</button>
+    <input id="selfieFile" type="file" accept="image/*" capture="user" style="display:none">
+  </section>
+
+  <!-- SHELF -->
+  <section id="s-shelf" class="screen">
+    <div class="brandline"><span class="seal">★</span> <span id="shelfWho">Your passports</span></div>
+    <h2>Your collection</h2>
+    <p class="sub" style="margin-bottom:16px">One passport per workshop — kept like stamps.</p>
+    <div id="shelfList"></div>
+    <div class="addcard" id="addCard"><span class="pl">+</span>Add new passport</div>
+    <div class="spacer"></div>
+    <div class="link" id="shelfSignOut">Sign out</div>
+  </section>
+
+  <!-- ADD PASSPORT -->
+  <section id="s-add" class="screen">
+    <div class="topbar"><span class="back" data-go="s-shelf">‹</span><div class="brandline"><span class="seal">★</span> New passport</div></div>
+    <h2>Join a workshop</h2>
+    <p class="sub">Enter the code from your facilitator.</p>
+    <label>Workshop code</label><input id="addCode" type="text" placeholder="AX7K2M" style="text-transform:uppercase">
+    <label>Name</label><input id="addName" type="text">
+    <label>Position for this course</label><input id="addPos" type="text">
+    <div id="addMsg" class="msg"></div>
+    <button id="addBtn" class="gold">Create passport</button>
+  </section>
+
+  <!-- PASSPORT HOME -->
+  <section id="s-pass" class="screen">
+    <div class="topbar"><span class="back" data-go="s-shelf">‹</span><div class="brandline"><span class="seal">★</span> Passport</div></div>
+    <div class="pcard">
+      <div class="pc-top"><span>Learning Passport</span><span id="pcNo">LP-26-0000</span></div>
+      <div class="pc-pill" id="pcScore">★ 0 pts</div>
+      <div class="pc-id"><div class="avatar" id="pcAv">··</div>
+        <div><div class="pc-name" id="pcName">—</div><div class="pc-role" id="pcRole">—</div></div></div>
+      <div class="pc-meta">
+        <div>Course<b id="pcCourse">—</b></div>
+        <div>Cohort<b id="pcCohort">—</b></div>
+        <div>Status<b>Active</b></div>
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <!-- JOURNAL LIST -->
+  <section id="s-jlist" class="screen">
+    <div class="topbar"><span class="back" data-go="s-pass">‹</span><div class="brandline"><span class="seal">★</span> Learning Journal</div></div>
+    <h2>Your reflections</h2>
+    <p class="sub" id="jlSub" style="margin-bottom:6px">Answer in any order.</p>
+    <div style="height:9px;border-radius:6px;background:var(--line);overflow:hidden;margin:0 0 16px">
+      <div id="jlBar" style="height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--gold-deep))"></div>
+    </div>
+    <div id="jlList"></div>
+    <div id="jlDone" class="done-badge" style="display:none;cursor:pointer">All reflections complete — tap to open your report.</div>
+  </section>
+
+  <!-- REPORT -->
+  <section id="s-report" class="screen">
+    <div class="topbar"><span class="back" data-go="s-jlist">‹</span><div class="brandline"><span class="seal">★</span> Your report</div></div>
+    <div id="repGen">
+      <h2>Your learning report</h2>
+      <p class="sub">Your reflections become a personal, AI-written synthesis and a shareable certificate — generated once.</p>
+      <div id="repMsg" class="msg"></div>
+      <button id="repBtn" class="gold">Generate my report</button>
+    </div>
+    <div id="repPrep" style="display:none;text-align:center;padding:50px 0">
+      <div class="brandline" style="justify-content:center"><span class="seal">★</span> Synthesis</div>
+      <h2 style="text-align:center">Weaving your reflections…</h2>
+      <p class="sub">This takes a moment. You can leave — it’ll be saved.</p>
+    </div>
+    <div id="repOut" style="display:none">
+      <div class="cert">
+        <div class="cert-seal">★</div>
+        <div class="cert-h">Certificate of Completion</div>
+        <div class="cert-who" id="repWho">—</div>
+        <div class="cert-sub" id="repCourse">—</div>
+        <div class="cert-line" id="repCapstone">—</div>
+      </div>
+      <div class="rsec"><div class="rsh">Executive summary</div><p id="repExec"></p></div>
+      <div class="rsec"><div class="rsh">Your action plan</div><div id="repPlan"></div></div>
+      <a id="repPdf" href="#" target="_blank"><button class="gold">Download PDF report</button></a>
+    </div>
+  </section>
+
+  <!-- JOURNAL DETAIL -->
+  <section id="s-journal" class="screen">
+    <div class="topbar"><span class="back" id="qBack">‹</span><div class="brandline"><span class="seal">★</span> Learning Journal</div></div>
+    <div class="qmeta" id="qMeta">Reflection</div>
+    <div class="qtext" id="qText">Loading…</div>
+    <textarea id="answer" placeholder="Write your reflection…"></textarea>
+    <div class="savenote" id="qNote">Worth points on submit.</div>
+    <div id="passMsg" class="msg"></div>
+    <button id="submitBtn" class="gold">Submit reflection</button>
+    <div id="doneBadge" class="done-badge" style="display:none"></div>
+  </section>
+
+  <!-- RESOURCES -->
+  <section id="s-resources" class="screen">
+    <div class="topbar"><span class="back" data-go="s-pass">‹</span><div class="brandline"><span class="seal">★</span> Resources</div></div>
+    <h2>Resources</h2>
+    <p class="sub" style="margin-bottom:16px">Materials your facilitator has shared for this workshop.</p>
+    <div id="resList"></div>
+  </section>
+
+  <!-- ACTIVITIES -->
+  <section id="s-activities" class="screen">
+    <div class="topbar"><span class="back" data-go="s-pass">‹</span><div class="brandline"><span class="seal">★</span> Activities</div></div>
+    <h2>Workshop activities</h2>
+    <p class="sub" id="actSub" style="margin-bottom:16px">Activities your facilitator has set for this workshop.</p>
+    <div id="actList"></div>
+  </section>
+
+  <!-- REWARDS -->
+  <section id="s-rewards" class="screen">
+    <div class="topbar"><span class="back" data-go="s-pass">‹</span><div class="brandline"><span class="seal">★</span> Rewards</div></div>
+    <h2>Redeem rewards</h2>
+    <p class="sub" id="rwSub" style="margin-bottom:14px">Spend your points on workshop perks.</p>
+    <div id="rwScore" style="font:600 15px 'Inter Tight';color:var(--gold-deep);margin-bottom:16px"></div>
+    <div id="rwList"></div>
+    <div id="rwMsg" class="msg"></div>
+  </section>
+
+  <!-- LEADERBOARD -->
+  <section id="s-leaderboard" class="screen">
+    <div class="topbar"><span class="back" data-go="s-pass">‹</span><div class="brandline"><span class="seal">★</span> Leaderboard</div></div>
+    <h2 id="lbCohort">Your cohort</h2>
+    <p class="sub" id="lbSub" style="margin-bottom:14px">Top 10 · your rank highlighted</p>
+    <div id="lbList"></div>
+    <div id="lbNote" class="sub" style="margin-top:14px;text-align:center"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="s-settings" class="screen">
+    <div class="topbar"><span class="back" data-go="s-pass">‹</span><div class="brandline"><span class="seal">★</span> Settings</div></div>
+    <h2>Your account</h2>
+    <div class="srow"><div class="l" id="setEdit"><div class="ic">👤</div> Name &amp; position</div><span style="color:#bbae93">›</span></div>
+    <div class="srow"><div class="l" id="setSelfie"><div class="ic">📷</div> Replace selfie</div><span style="color:#bbae93">›</span></div>
+    <div class="srow"><div class="l" id="setVis"><div class="ic">👥</div> Visible on leaderboard</div><span id="visState" style="color:var(--good);font-weight:600">On</span></div>
+    <div class="srow"><div class="l" id="setOut"><div class="ic">↪</div> Sign out</div><span style="color:#bbae93">›</span></div>
+    <div class="srow danger"><div class="l" id="setDel"><div class="ic">🗑</div> Delete account</div><span style="color:#bbae93">›</span></div>
+    <div id="setMsg" class="msg"></div>
+    <div class="spacer"></div>
+    <p class="sub" style="font-size:12px;text-align:center">Delete is permanent — every passport, reflection and your account are erased.</p>
+  </section>
+
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore, doc, getDoc, setDoc, getDocs, collection, query, where,
+  serverTimestamp, connectFirestoreEmulator }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  onAuthStateChanged, signOut, sendPasswordResetEmail, connectAuthEmulator }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getFunctions, httpsCallable, connectFunctionsEmulator }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js';
+import { getStorage, ref as sref, uploadString, getDownloadURL, connectStorageEmulator }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js';
+
+const firebaseConfig = {
+  apiKey:"AIzaSyDKon9lKqQbypo27FqS8KVDSqfxgr4ON0c",
+  authDomain:"learning-activities-kny.firebaseapp.com",
+  projectId:"learning-activities-kny",
+  storageBucket:"learning-activities-kny.firebasestorage.app",
+  messagingSenderId:"167106830334",
+  appId:"1:167106830334:web:e7441ec23ba33f7f4eaaaf"
+};
+const app  = initializeApp(firebaseConfig, 'lpParticipant');
+const db   = getFirestore(app);
+const auth = getAuth(app);
+const fns  = getFunctions(app, 'asia-southeast1');
+const storage = getStorage(app);
+
+const LOCAL = ['localhost','127.0.0.1'].includes(location.hostname);
+if (LOCAL) {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings:true });
+  connectFirestoreEmulator(db, '127.0.0.1', 8080);
+  connectFunctionsEmulator(fns, '127.0.0.1', 5001);
+  connectStorageEmulator(storage, '127.0.0.1', 9199);
+  const t = document.getElementById('envtag'); t.style.display='block'; t.textContent='Emulator';
+}
+
+const $ = id => document.getElementById(id);
+const show = s => document.querySelectorAll('.screen').forEach(el => el.classList.toggle('active', el.id === s));
+const initials = n => (n||'').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase() || '··';
+const hash = s => { let h=0; for (let i=0;i<s.length;i++) h=(h<<5)-h+s.charCodeAt(i)|0; return h; };
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => show(b.dataset.go)));
+
+let S = { uid:null, learner:null, passport:null, course:null };
+
+// ── AUTH ──
+$('authBtn').addEventListener('click', async () => {
+  const email=$('email').value.trim(), pass=$('pass').value;
+  const m=$('authMsg'); m.className='msg';
+  if (!email || pass.length<6) { m.className='msg err'; m.textContent='Email and a 6+ character password are required.'; return; }
+  if (!$('consent').checked) { m.className='msg err'; m.textContent='Please give consent to continue.'; return; }
+  $('authBtn').disabled=true; m.textContent='Signing in…';
+  try {
+    try { await signInWithEmailAndPassword(auth,email,pass); }
+    catch(e){ if(['auth/user-not-found','auth/invalid-credential'].includes(e.code)) await createUserWithEmailAndPassword(auth,email,pass); else throw e; }
+  } catch(e){
+    m.className='msg err';
+    m.textContent = e.code==='auth/wrong-password' ? 'That account exists but the password is wrong.' : (e.message||'Could not sign in.');
+    $('authBtn').disabled=false;
+  }
+});
+
+$('forgotLink').addEventListener('click', async () => {
+  const email = $('email').value.trim();
+  const m = $('authMsg'); m.className = 'msg';
+  if (!email) { m.className='msg err'; m.textContent='Enter your email first.'; return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    m.className='msg ok'; m.textContent='Reset link sent — check your inbox.';
+  } catch(e) { m.className='msg err'; m.textContent=e.message||'Could not send reset email.'; }
+});
+
+onAuthStateChanged(auth, async u => {
+  if (!u) { S={uid:null}; show('s-auth'); $('authBtn').disabled=false; return; }
+  S.uid = u.uid;
+  const ls = await getDoc(doc(db,'learners',u.uid));
+  S.learner = ls.exists() ? ls.data() : null;
+  if (!S.learner || !S.learner.displayName) { paintSelfieRing(); show('s-profile'); return; }
+  await renderShelf();
+});
+
+// ── PROFILE ──
+$('profBtn').addEventListener('click', async () => {
+  const name=$('pName').value.trim(), pos=$('pPos').value.trim();
+  if (!name) { $('profMsg').className='msg err'; $('profMsg').textContent='Name is required.'; return; }
+  $('profBtn').disabled=true;
+  try {
+    await setDoc(doc(db,'learners',S.uid),
+      { uid:S.uid, email:auth.currentUser.email, displayName:name, position:pos,
+        createdAt: S.learner?.createdAt || serverTimestamp() }, { merge:true });
+    S.learner = { uid:S.uid, displayName:name, position:pos };
+    await renderShelf();
+  } catch(e){ $('profMsg').className='msg err'; $('profMsg').textContent=e.message; $('profBtn').disabled=false; }
+});
+
+// ── SELFIE ──
+function paintAvatar(el, name){
+  const url = S.learner && S.learner.selfieUrl;
+  if (url) el.innerHTML = `<img src="${url}" alt="">`;
+  else el.textContent = initials(name);
+}
+function paintSelfieRing(){
+  const r=$('selfieRing');
+  if (S.learner && S.learner.selfieUrl) r.innerHTML=`<img src="${S.learner.selfieUrl}" alt="">`;
+  else r.innerHTML='Tap to<br>add photo';
+}
+$('selfieRing').addEventListener('click',()=>$('selfieFile').click());
+$('setSelfie').addEventListener('click',()=>$('selfieFile').click());
+$('selfieFile').addEventListener('change', async e => {
+  const file=e.target.files[0]; if(!file) return;
+  try {
+    const dataUrl = await new Promise((resolve,reject)=>{
+      const img=new Image();
+      img.onload=()=>{
+        const S2=360, cv=document.createElement('canvas'); cv.width=S2; cv.height=S2;
+        const ctx=cv.getContext('2d');
+        const m=Math.min(img.width,img.height);
+        ctx.drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,S2,S2);
+        resolve(cv.toDataURL('image/jpeg',0.5));
+      };
+      img.onerror=reject;
+      img.src=URL.createObjectURL(file);
+    });
+    const r=sref(storage,`passport-selfies/${S.uid}/avatar.jpg`);
+    await uploadString(r,dataUrl,'data_url');
+    const url=await getDownloadURL(r);
+    await setDoc(doc(db,'learners',S.uid),{ uid:S.uid, selfieUrl:url },{ merge:true });
+    S.learner = Object.assign({}, S.learner, { selfieUrl:url });
+    paintSelfieRing();
+    if (S.passport) paintAvatar($('pcAv'), S.passport.displayName);
+  } catch(err){
+    const m=$('profMsg'); m.className='msg err'; m.textContent='Photo upload failed: '+(err.message||err);
+  } finally { e.target.value=''; }
+});
+
+// ── SHELF ──
+async function renderShelf(){
+  $('shelfWho').textContent = (S.learner.displayName.split(' ')[0]||'Your') + "'s passports";
+  const snap = await getDocs(query(collection(db,'passports'), where('learnerUid','==',S.uid)));
+  const list=$('shelfList'); list.innerHTML='';
+  const docs = snap.docs.map(d=>d.data());
+  if (!docs.length) list.innerHTML='<div class="empty">No passports yet — add your first below.</div>';
+  for (const p of docs) {
+    const el=document.createElement('div'); el.className='mini';
+    const avInner = (S.learner&&S.learner.selfieUrl) ? `<img src="${S.learner.selfieUrl}" alt="">` : initials(p.displayName);
+    el.innerHTML=`<div class="av2">${avInner}</div>
+      <div class="mt"><b>${p.courseName||p.workshopCode}</b><span>${p.cohortName||''} · ${p.passportNumber}</span></div>
+      <span class="mst">${p.status==='active'?'Active':'Kept'}</span>`;
+    el.addEventListener('click',()=>openPassport(p.passportId));
+    list.appendChild(el);
+  }
+  show('s-shelf');
+}
+$('addCard').addEventListener('click',()=>{
+  $('addName').value=S.learner.displayName; $('addPos').value=S.learner.position||'';
+  $('addCode').value=''; $('addMsg').textContent=''; $('addBtn').disabled=false; show('s-add');
+});
+$('shelfSignOut').addEventListener('click',()=>signOut(auth));
+
+// ── ADD PASSPORT ──
+$('addBtn').addEventListener('click', async () => {
+  const code=$('addCode').value.trim().toUpperCase();
+  const name=$('addName').value.trim(), pos=$('addPos').value.trim();
+  const m=$('addMsg'); m.className='msg';
+  if (!code || !name) { m.className='msg err'; m.textContent='Workshop code and name are required.'; return; }
+  $('addBtn').disabled=true; m.textContent='Creating…';
+  try {
+    const cs = await getDoc(doc(db,'courses',code));
+    if (!cs.exists()) { m.className='msg err'; m.textContent=`No workshop found for code ${code}.`; $('addBtn').disabled=false; return; }
+    const course = cs.data();
+    const pid = `${S.uid}_${code}`;
+    const ex = await getDoc(doc(db,'passports',pid));
+    // Pre-registration gate: a closed cohort accepts no NEW passports, but
+    // anyone who already minted one keeps full access.
+    if (!ex.exists() && course.status === 'closed') {
+      m.className='msg err';
+      m.textContent='Registration for this workshop is closed.';
+      $('addBtn').disabled=false; return;
+    }
+    if (!ex.exists()) {
+      const seq = Math.abs(hash(S.uid+code)) % 10000;
+      await setDoc(doc(db,'passports',pid), {
+        passportId:pid, learnerUid:S.uid, workshopCode:code, courseId:code,
+        passportNumber:'LP-26-'+String(seq).padStart(4,'0'),
+        displayName:name, position:pos,
+        courseName:course.name||code, cohortName:course.cohortName||'',
+        score:0, status:'active', createdAt:serverTimestamp()
+      });
+    }
+    await openPassport(pid);
+  } catch(e){ m.className='msg err'; m.textContent=e.message||'Could not create passport.'; $('addBtn').disabled=false; }
+});
+
+// ── PASSPORT HOME ──
+async function openPassport(pid){
+  const ps = await getDoc(doc(db,'passports',pid));
+  if (!ps.exists()) { await renderShelf(); return; }
+  S.passport = ps.data();
+  const cs = await getDoc(doc(db,'courses',S.passport.courseId));
+  S.course = cs.exists()? cs.data() : {};
+  const p=S.passport, c=S.course;
+  $('pcNo').textContent=p.passportNumber;
+  paintAvatar($('pcAv'), p.displayName);
+  $('pcName').textContent=p.displayName;
+  $('pcRole').textContent=p.position||'—';
+  $('pcCourse').textContent=p.courseName||c.name||p.workshopCode;
+  $('pcCohort').textContent=p.cohortName||c.cohortName||'—';
+  $('pcScore').textContent='★ '+(p.score||0)+' pts';
+  const prog = await journalProgress();
+  buildGrid((c.featureFlags)||{journal:true}, prog);
+  show('s-pass');
+}
+
+const DEFAULT_Q = 'What is one idea from today you will act on first — and why that one?';
+function getQuestions(){
+  const c=S.course||{};
+  if (Array.isArray(c.journalQuestions) && c.journalQuestions.length) {
+    // Only show questions the facilitator has pushed live (live !== false for backward compat)
+    const live = c.journalQuestions.filter(q => q.live !== false);
+    return live.length ? live : [];
+  }
+  return [{ id:'q1', topic:'', objective:'', prompt: c.reflectionQuestion || DEFAULT_Q }];
+}
+async function journalProgress(){
+  const qs=getQuestions(), pid=S.passport.passportId;
+  let done=0;
+  await Promise.all(qs.map(async q=>{
+    const s=await getDoc(doc(db,'journalEntries',`${pid}__${q.id}`));
+    if (s.exists() && s.data().submitted) done++;
+  }));
+  return { done, total:qs.length, label: done===0?'Reflect':(done>=qs.length?'Done':`${done}/${qs.length}`) };
+}
+
+// Feature-flag-driven grid. Disabled features are NOT rendered (PRD §6.1).
+// Journal & Settings always present; built features live, rest as "Soon".
+function buildGrid(flags, prog){
+  const tiles = [
+    { key:'journal',     ic:'✍️', name:'Journal',     always:false, live:true  },
+    { key:'resources',   ic:'📚', name:'Resources',   always:false, live:true  },
+    { key:'activities',  ic:'🎯', name:'Activities',  always:false, live:true  },
+    { key:'leaderboard', ic:'🏆', name:'Leaderboard', always:false, live:true  },
+    { key:'rewards',     ic:'🎁', name:'Rewards',     always:false, live:true  },
+    { key:'settings',    ic:'⚙️', name:'Settings',    always:true,  live:true  },
+  ];
+  const g=$('grid'); g.innerHTML='';
+  for (const t of tiles) {
+    if (!t.always && !flags[t.key]) continue;
+    const el=document.createElement('div');
+    const st = t.key==='journal'     ? (prog?prog.label:'Reflect')
+             : t.key==='settings'    ? 'Account'
+             : t.key==='leaderboard' ? 'View'
+             : 'Open';
+    el.className = 'tile' + (t.key==='journal'?' lit':'') + (t.live?'':' soon');
+    el.innerHTML = `<div class="ic">${t.ic}</div><h4>${t.name}</h4><div class="st">${st}</div>`;
+    if (t.key==='journal')     el.addEventListener('click', openJournalList);
+    if (t.key==='resources')   el.addEventListener('click', openResources);
+    if (t.key==='activities')  el.addEventListener('click', openActivities);
+    if (t.key==='leaderboard') el.addEventListener('click', openLeaderboard);
+    if (t.key==='rewards')     el.addEventListener('click', openRewards);
+    if (t.key==='settings')    el.addEventListener('click', openSettings);
+    g.appendChild(el);
+  }
+}
+
+// ── JOURNAL (multi-question) ──
+async function openJournalList(){
+  const qs=getQuestions(), pid=S.passport.passportId;
+  if (!qs.length){
+    $('jlSub').textContent = 'No questions available yet.';
+    $('jlBar').style.width = '0%';
+    $('jlDone').style.display = 'none';
+    $('jlList').innerHTML = '<div class="empty" style="padding:40px 0 20px">Your facilitator will push questions live when it\'s time to reflect.</div>';
+    show('s-jlist'); return;
+  }
+  const states = await Promise.all(qs.map(async q=>{
+    const s=await getDoc(doc(db,'journalEntries',`${pid}__${q.id}`));
+    return s.exists() && s.data().submitted;
+  }));
+  const done=states.filter(Boolean).length;
+  $('jlSub').textContent = `${done} of ${qs.length} complete · answer in any order`;
+  $('jlBar').style.width = Math.round(done/qs.length*100)+'%';
+  $('jlDone').style.display = done>=qs.length ? 'block' : 'none';
+  const list=$('jlList'); list.innerHTML='';
+  qs.forEach((q,i)=>{
+    const isDone=states[i];
+    const el=document.createElement('div');
+    el.className='jl-item'+(isDone?' done':'');
+    el.innerHTML=`<div class="n">${isDone?'✓':(i+1)}</div>
+      <div class="tt"><b>${q.prompt}</b><span>${q.topic||('Reflection '+(i+1))}</span></div>
+      <span class="ch">${isDone?'Done':'To do'}</span>`;
+    el.addEventListener('click',()=>openQuestion(q,i));
+    list.appendChild(el);
+  });
+  show('s-jlist');
+}
+async function openQuestion(q,i){
+  S.currentQ=q;
+  $('qMeta').textContent = q.topic ? `Reflection ${i+1} · ${q.topic}` : `Reflection ${i+1}`;
+  $('qText').textContent = q.prompt;
+  $('qNote').textContent = q.objective ? `Objective: ${q.objective}` : 'Worth points on submit.';
+  $('answer').value=''; $('answer').disabled=false;
+  $('submitBtn').style.display=''; $('submitBtn').disabled=false;
+  $('doneBadge').style.display='none'; $('passMsg').textContent='';
+  const pid=S.passport.passportId;
+  const s=await getDoc(doc(db,'journalEntries',`${pid}__${q.id}`));
+  if (s.exists() && s.data().submitted){
+    $('answer').value=s.data().response||''; lockReflection(S.passport.score);
+  }
+  show('s-journal');
+}
+$('submitBtn').addEventListener('click', async () => {
+  const text=$('answer').value.trim(), m=$('passMsg'); m.className='msg';
+  if (!S.currentQ){ return; }
+  if (text.length<10){ m.className='msg err'; m.textContent='Write a little more first.'; return; }
+  $('submitBtn').disabled=true; m.textContent='Submitting…';
+  try {
+    const pid=S.passport.passportId, qid=S.currentQ.id, entryId=`${pid}__${qid}`;
+    await setDoc(doc(db,'journalEntries',entryId), {
+      entryId, passportId:pid, learnerUid:S.uid, questionId:qid,
+      response:text, wordCount:text.split(/\s+/).length, submitted:true, submittedAt:serverTimestamp() });
+    const res = await httpsCallable(fns,'awardPassportPoints')({ passportId:pid, entryId });
+    S.passport.score = res.data.score;
+    $('pcScore').textContent='★ '+res.data.score+' pts';
+    const prog = await journalProgress();
+    buildGrid((S.course && S.course.featureFlags) || {journal:true}, prog);
+    lockReflection(res.data.score, res.data.points);
+  } catch(e){ m.className='msg err'; m.textContent=e.message||'Submit failed.'; $('submitBtn').disabled=false; }
+});
+function lockReflection(score, points){
+  $('answer').disabled=true; $('submitBtn').style.display='none';
+  const b=$('doneBadge'); b.style.display='block';
+  b.textContent = points ? `Submitted — +${points} pts · balance ${score}` : `Already submitted · balance ${score}`;
+}
+$('qBack').addEventListener('click', openJournalList);
+$('jlDone').addEventListener('click', openReport);
+
+// ── REPORT / SYNTHESIS ──
+async function openReport(){
+  $('repGen').style.display='none'; $('repPrep').style.display='none'; $('repOut').style.display='none';
+  $('repMsg').textContent='';
+  show('s-report');
+  try {
+    const snap=await getDoc(doc(db,'synthesisReports',S.passport.passportId));
+    if (snap.exists()){
+      const d=snap.data();
+      renderReport(Object.assign({}, d.json, { pdfUrl:d.pdfUrl }));
+      return;
+    }
+  } catch(e){ /* not generated yet */ }
+  $('repGen').style.display='block';
+}
+$('repBtn').addEventListener('click', async () => {
+  $('repGen').style.display='none'; $('repPrep').style.display='block';
+  try {
+    const res=await httpsCallable(fns,'generatePassportSynthesis')({ passportId:S.passport.passportId });
+    renderReport(res.data);
+  } catch(e){
+    $('repPrep').style.display='none'; $('repGen').style.display='block';
+    const m=$('repMsg'); m.className='msg err';
+    m.textContent = e.message || 'Could not generate the report.';
+  }
+});
+// ── LEADERBOARD ──
+async function openLeaderboard(){
+  $('lbCohort').textContent = S.passport.cohortName || S.passport.courseName || 'Your cohort';
+  const list=$('lbList'), note=$('lbNote');
+  list.innerHTML='<p class="sub">Loading…</p>'; note.textContent='';
+  show('s-leaderboard');
+  try {
+    const snap=await getDocs(query(collection(db,'leaderboardEntries'),
+      where('courseId','==',S.passport.courseId)));
+    let rows=snap.docs.map(d=>d.data()).filter(r=>r.visible!==false);
+    rows.sort((a,b)=>(b.score||0)-(a.score||0));
+    const myIdx=rows.findIndex(r=>r.uid===S.uid);
+    list.innerHTML='';
+    if (!rows.length){ list.innerHTML='<p class="sub">No scores yet — be the first.</p>'; return; }
+    rows.slice(0,10).forEach((r,i)=>{
+      const el=document.createElement('div');
+      el.className='lb-row'+(r.uid===S.uid?' me':'');
+      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+      el.innerHTML=`<div class="rk">${medal}</div>
+        <div class="av">${(r.name||'?').slice(0,2).toUpperCase()}</div>
+        <div class="nm">${r.name||'—'}${r.uid===S.uid?' · You':''}</div>
+        <div class="pt">${r.score||0}</div>`;
+      list.appendChild(el);
+    });
+    if (myIdx<0) note.textContent='You’re hidden from the cohort (toggle in Settings) or haven’t scored yet.';
+    else if (myIdx>=10) note.textContent=`Your rank: #${myIdx+1} of ${rows.length}`;
+  } catch(e){ list.innerHTML='<p class="sub">Could not load the leaderboard.</p>'; }
+}
+
+// ── RESOURCES ──
+function openResources(){
+  const resources = ((S.course && S.course.resources) || []).filter(r => r.live !== false);
+  show('s-resources');
+  const list = $('resList');
+  if (!resources.length){
+    list.innerHTML = '<div class="empty">No resources available yet — check back during the workshop.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  resources.forEach(r => {
+    const el = document.createElement('div');
+    el.className = 'act-card';
+    el.innerHTML = `<div class="act-top">
+      <div class="act-ic">📚</div>
+      <div class="act-info"><b>${r.name}</b><span>${r.description || ''}</span></div>
+    </div>${r.url ? `<a class="act-link" href="${r.url}" target="_blank" rel="noopener">Open resource →</a>` : ''}`;
+    list.appendChild(el);
+  });
+}
+
+// ── ACTIVITIES ──
+function openActivities(){
+  const links = ((S.course && S.course.activityLinks) || []).filter(a => a.live !== false);
+  show('s-activities');
+  const list = $('actList');
+  if (!links.length){
+    list.innerHTML = '<div class="empty">No activities available yet — your facilitator will push them live during the workshop.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  const icons = { impactbingo:'🎯', reflectivejournal:'📝', poll:'📊', scenario:'🧩' };
+  links.forEach(a => {
+    const ic = icons[a.type] || '🔗';
+    const el = document.createElement('div');
+    el.className = 'act-card';
+    el.innerHTML = `<div class="act-top">
+      <div class="act-ic">${ic}</div>
+      <div class="act-info"><b>${a.name}</b><span>${a.description || ''}</span></div>
+    </div>${a.url ? `<a class="act-link" href="${a.url}" target="_blank" rel="noopener">Open activity →</a>` : ''}`;
+    list.appendChild(el);
+  });
+}
+
+// ── REWARDS ──
+async function openRewards(){
+  const rewards = ((S.course && S.course.rewards) || []).filter(r => r.live !== false);
+  const pid = S.passport.passportId;
+  $('rwScore').textContent = '★ ' + (S.passport.score || 0) + ' pts available';
+  $('rwMsg').textContent = '';
+  show('s-rewards');
+  const list = $('rwList');
+  if (!rewards.length){
+    list.innerHTML = '<div class="empty">No rewards set up for this course yet.</div>';
+    return;
+  }
+  if (!rewards.length){
+    list.innerHTML = '<div class="empty">No rewards available yet — your facilitator will push them live when ready.</div>';
+    return;
+  }
+  list.innerHTML = '<p class="sub">Loading…</p>';
+  // Fetch which rewards are already redeemed.
+  const redeemed = new Set();
+  try {
+    await Promise.all(rewards.map(async r => {
+      const s = await getDoc(doc(db, 'passports', pid, 'redemptions', r.id));
+      if (s.exists()) redeemed.add(r.id);
+    }));
+  } catch(_) {}
+  list.innerHTML = '';
+  rewards.forEach(r => {
+    const score = S.passport.score || 0;
+    const isDone = redeemed.has(r.id);
+    const canAfford = score >= r.pointCost;
+    const el = document.createElement('div');
+    el.className = 'rw-card';
+    const btnCls = isDone ? 'done' : (canAfford ? 'can' : 'no');
+    const btnTxt = isDone ? 'Claimed ✓' : (canAfford ? 'Redeem' : `Need ${r.pointCost}`);
+    el.innerHTML = `<div class="rw-ic">🎁</div>
+      <div class="rw-info"><b>${r.name}</b><span>${r.description ? r.description + ' · ' : ''}${r.pointCost} pts</span></div>
+      <button class="rw-act ${btnCls}" data-id="${r.id}" ${isDone||!canAfford?'disabled':''}>${btnTxt}</button>`;
+    if (!isDone && canAfford) {
+      el.querySelector('button').addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true; btn.textContent = 'Redeeming…';
+        const m = $('rwMsg'); m.className = 'msg';
+        try {
+          const res = await httpsCallable(fns, 'redeemReward')({ passportId: pid, rewardId: r.id });
+          S.passport.score = res.data.score;
+          $('pcScore').textContent = '★ ' + res.data.score + ' pts';
+          $('rwScore').textContent = '★ ' + res.data.score + ' pts available';
+          btn.className = 'rw-act done'; btn.textContent = 'Claimed ✓';
+          m.className = 'msg ok';
+          m.textContent = res.data.alreadyRedeemed ? 'Already claimed.' : `Claimed! −${r.pointCost} pts`;
+        } catch(err) {
+          m.className = 'msg err';
+          m.textContent = err.message || 'Could not redeem.';
+          btn.disabled = false; btn.textContent = 'Redeem';
+        }
+      });
+    }
+    list.appendChild(el);
+  });
+}
+
+function renderReport(r){
+  $('repPrep').style.display='none'; $('repGen').style.display='none';
+  $('repWho').textContent=S.passport.displayName;
+  $('repCourse').textContent=`${S.passport.courseName||S.passport.workshopCode||''}${S.passport.cohortName?' · '+S.passport.cohortName:''}`;
+  $('repCapstone').textContent=r.capstone||'';
+  $('repExec').textContent=r.execSummary||'';
+  const plan=$('repPlan'); plan.innerHTML='';
+  (r.actionPlan||[]).forEach((a,i)=>{ const d=document.createElement('div'); d.textContent=`${i+1}.  ${a}`; plan.appendChild(d); });
+  if (r.pdfUrl) $('repPdf').href=r.pdfUrl;
+  $('repOut').style.display='block';
+}
+
+// ── SETTINGS ──
+function openSettings(){
+  const vis = !(S.passport && S.passport.visibleToCohort === false);
+  const el=$('visState');
+  el.textContent = vis ? 'On' : 'Off';
+  el.style.color = vis ? 'var(--good)' : '#bbae93';
+  show('s-settings');
+}
+$('setVis').addEventListener('click', async () => {
+  const next = (S.passport.visibleToCohort === false); // flipping to visible?
+  S.passport.visibleToCohort = next;
+  const el=$('visState');
+  el.textContent = next ? 'On' : 'Off';
+  el.style.color = next ? 'var(--good)' : '#bbae93';
+  try {
+    await setDoc(doc(db,'passports',S.passport.passportId), { visibleToCohort: next }, { merge:true });
+    // Apply immediately to an existing leaderboard entry (owner may flip
+    // only `visible`); if no entry yet it'll inherit on the next award.
+    try {
+      await setDoc(doc(db,'leaderboardEntries',`${S.passport.courseId}__${S.uid}`),
+        { visible: next }, { merge:true });
+    } catch(_) {}
+  } catch(e){ /* revert UI on failure */
+    S.passport.visibleToCohort = !next;
+    el.textContent = !next ? 'On' : 'Off';
+  }
+});
+$('setEdit').addEventListener('click',()=>{
+  $('pName').value=S.learner.displayName; $('pPos').value=S.learner.position||'';
+  $('profBtn').disabled=false; $('profMsg').textContent=''; paintSelfieRing(); show('s-profile');
+});
+$('setOut').addEventListener('click',()=>signOut(auth));
+$('setDel').addEventListener('click', async () => {
+  const m=$('setMsg');
+  if (!confirm('Permanently delete your account and every passport? This cannot be undone.')) return;
+  m.className='msg'; m.textContent='Deleting…';
+  try {
+    await httpsCallable(fns,'deleteLearnerAccount')({});
+    await signOut(auth);
+  } catch(e){ m.className='msg err'; m.textContent=e.message||'Delete failed.'; }
+});
+</script>
+</body>
+</html>

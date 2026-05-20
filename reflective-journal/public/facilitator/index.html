@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reflective Journal — Facilitator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --yellow: #FFFF00;
+  --pink:   #FF00FF;
+  --cyan:   #00FFFF;
+  --green:  #00FF00;
+  --red:    #FF3131;
+  --white:  #FFFFFF;
+  --black:  #000000;
+  --bg:     #F0F0F0;
+  --border: 3px solid #000;
+  --shadow: 4px 4px 0px #000;
+  --shadow-lg: 8px 8px 0px #000;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg); color: var(--black);
+  min-height: 100vh; -webkit-tap-highlight-color: transparent;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; min-height: 100vh; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ── HEADER ── */
+.hdr {
+  background: var(--black); color: var(--white);
+  padding: 14px 20px; display: flex; justify-content: space-between; align-items: center;
+  border-bottom: var(--border);
+}
+.hdr-brand { font-family: 'Unbounded', sans-serif; font-size: 0.7rem; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
+.hdr-tag   { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--yellow); }
+
+
+/* ── WORKSHOPS SCREEN ── */
+#s-workshops { padding: 0; }
+#s-workshops .body { flex: 1; padding: 24px; max-width: 800px; margin: 0 auto; width: 100%; }
+.workshop-card {
+  background: var(--white); border: var(--border); padding: 20px;
+  margin-bottom: 16px; box-shadow: var(--shadow); cursor: pointer;
+  transition: all 0.1s; display: flex; justify-content: space-between; align-items: center;
+}
+.workshop-card:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 #000; }
+.workshop-card:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+.wcard-code { font-family: 'Unbounded', sans-serif; font-size: 1.4rem; font-weight: 900; letter-spacing: 2px; }
+.wcard-name { font-size: 0.85rem; font-weight: 700; color: #555; text-transform: uppercase; margin-top: 4px; }
+.wcard-meta { font-size: 0.75rem; font-weight: 700; color: #888; text-transform: uppercase; }
+.status-pill {
+  padding: 6px 12px; border: 2px solid #000;
+  font-family: 'Unbounded', sans-serif; font-size: 0.6rem; font-weight: 900; text-transform: uppercase;
+}
+.status-live  { background: var(--green); }
+.status-draft { background: var(--yellow); }
+.status-ended { background: #ddd; }
+.empty-state { text-align: center; padding: 60px 20px; color: #666; font-weight: 700; text-transform: uppercase; }
+
+/* ── CONTROL ROOM ── */
+#s-control { padding: 0; }
+#s-control .body { flex: 1; padding: 20px; max-width: 800px; margin: 0 auto; width: 100%; padding-bottom: 40px; }
+
+.ctrl-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+@media(max-width:600px) { .ctrl-row { grid-template-columns: 1fr; } }
+
+.stat-box {
+  background: var(--white); border: var(--border); padding: 20px;
+  box-shadow: var(--shadow); text-align: center;
+}
+.stat-value { font-family: 'Unbounded', sans-serif; font-size: 2rem; font-weight: 900; }
+.stat-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #555; margin-top: 4px; }
+
+.code-display {
+  background: var(--yellow); border: var(--border); padding: 20px 24px;
+  margin-bottom: 20px; box-shadow: var(--shadow-lg);
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+}
+.code-big { font-family: 'Unbounded', sans-serif; font-size: 2.2rem; font-weight: 900; letter-spacing: 6px; }
+.code-url { font-size: 0.75rem; font-weight: 700; color: #333; margin-top: 4px; }
+
+.section-title {
+  font-family: 'Unbounded', sans-serif; font-size: 0.7rem; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 1px; color: #444;
+  margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #000;
+}
+
+.activity-item {
+  background: var(--white); border: var(--border); padding: 16px;
+  margin-bottom: 12px; box-shadow: var(--shadow); display: flex;
+  justify-content: space-between; align-items: flex-start; gap: 12px;
+}
+.activity-item.active-now { background: var(--cyan); }
+.activity-prompt-text { font-weight: 700; font-size: 0.9rem; line-height: 1.4; flex: 1; }
+.activity-meta { font-size: 0.7rem; font-weight: 700; color: #666; text-transform: uppercase; margin-top: 4px; }
+.activity-pushed-badge {
+  background: var(--black); color: var(--white);
+  font-family: 'Unbounded', sans-serif; font-size: 0.6rem; font-weight: 900;
+  text-transform: uppercase; padding: 4px 8px; white-space: nowrap;
+}
+
+/* ── TRAINING INFO ── */
+.ti-label { display:block; font-size:0.62rem; font-weight:900; text-transform:uppercase; letter-spacing:0.5px; color:#666; margin-top:12px; }
+.ti-label:first-child { margin-top:0; }
+.ti-save { font-size:0.65rem; font-weight:800; text-transform:uppercase; color:#007700; height:16px; margin-top:8px; }
+
+/* ── PLAN TABLE ── */
+.plan-row {
+  background: var(--white); border: var(--border); box-shadow: var(--shadow);
+  margin-bottom: 14px; display: grid;
+  grid-template-columns: 1.2fr 1.2fr 0.9fr; gap: 0;
+}
+@media(max-width:680px){ .plan-row { grid-template-columns: 1fr; } }
+.plan-col { padding: 14px; border-right: 2px solid #000; }
+.plan-col:last-child { border-right: none; }
+@media(max-width:680px){ .plan-col { border-right:none; border-bottom:2px solid #000; } .plan-col:last-child{ border-bottom:none; } }
+.plan-col label { display:block; font-size:0.58rem; font-weight:900; text-transform:uppercase; letter-spacing:0.5px; color:#666; margin:10px 0 0; }
+.plan-col label:first-child { margin-top:0; }
+.plan-row.locked input, .plan-row.locked textarea { background:#efefef; color:#555; pointer-events:none; }
+.plan-row input, .plan-row textarea { font-size:0.85rem; padding:10px 12px; }
+.state-badge {
+  display:inline-block; font-family:'Unbounded',sans-serif; font-size:0.6rem; font-weight:900;
+  text-transform:uppercase; padding:5px 10px; border:2px solid #000; margin-bottom:10px;
+}
+.sb-draft     { background:#ddd; }
+.sb-confirmed { background:var(--yellow); }
+.sb-live      { background:var(--green); }
+.sb-complete  { background:var(--cyan); }
+.pr-actions { display:flex; flex-direction:column; gap:8px; }
+.pr-actions button { width:100%; padding:10px 8px; font-size:0.62rem; }
+.pr-count { font-size:0.68rem; font-weight:800; text-transform:uppercase; color:#444; margin-top:10px; }
+.pr-del { background:none; border:none; box-shadow:none; color:var(--red); font-size:0.6rem; padding:4px; width:auto; text-decoration:underline; }
+
+/* ── OVERLAYS ── */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85); backdrop-filter: blur(4px);
+  justify-content: center; align-items: center; z-index: 1000; padding: 20px;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--white); border: var(--border); padding: 32px;
+  width: 100%; max-width: 480px; box-shadow: 12px 12px 0 #000;
+  max-height: 90vh; overflow-y: auto;
+}
+
+/* ── INPUTS ── */
+input[type=text], textarea, select {
+  width: 100%; padding: 14px 16px; margin: 8px 0 0;
+  background: var(--white); border: var(--border);
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.95rem; font-weight: 700;
+  color: var(--black); outline: none; border-radius: 0; resize: vertical; -webkit-appearance: none;
+}
+input:focus, textarea:focus, select:focus { background: var(--cyan); }
+
+/* ── BUTTONS ── */
+button {
+  font-family: 'Unbounded', sans-serif; font-weight: 900; text-transform: uppercase;
+  font-size: 0.85rem; border: var(--border); padding: 14px 20px;
+  cursor: pointer; transition: all 0.1s; box-shadow: var(--shadow);
+  border-radius: 0; width: 100%;
+}
+button:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 1px 1px 0 #000; }
+button:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; transform: none; }
+.btn-primary { background: var(--black); color: var(--white); }
+.btn-yellow  { background: var(--yellow); color: var(--black); }
+.btn-green   { background: var(--green);  color: var(--black); }
+.btn-pink    { background: var(--pink);   color: var(--black); }
+.btn-ghost   { background: var(--white);  color: var(--black); }
+.btn-sm      { padding: 10px 16px; font-size: 0.7rem; width: auto; }
+.btn-row     { display: flex; gap: 12px; margin-top: 20px; }
+
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(120px);
+  background: var(--black); color: var(--white);
+  padding: 14px 28px; border: var(--border); border-color: #fff;
+  font-family: 'Unbounded', sans-serif; font-weight: 900; text-transform: uppercase;
+  font-size: 0.8rem; z-index: 5000; pointer-events: none;
+  box-shadow: var(--shadow-lg); transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+  white-space: nowrap;
+}
+#toast.up  { transform: translateX(-50%) translateY(0); }
+#toast.ok  { background: var(--green); color: #000; border-color: #000; }
+#toast.err { background: var(--red);   color: #fff; border-color: #000; }
+
+/* ── UTILS ── */
+h2 { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 1.3rem; text-transform: uppercase; letter-spacing: -1px; margin-bottom: 12px; }
+h3 { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 0.95rem; text-transform: uppercase; letter-spacing: -0.5px; margin-bottom: 12px; }
+p  { font-weight: 600; line-height: 1.5; color: #333; }
+.mt { margin-top: 16px; }
+.mt2 { margin-top: 24px; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 3px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ── WORKSHOPS ── -->
+<div class="screen active" id="s-workshops">
+  <div class="hdr">
+    <div>
+      <div class="hdr-brand">Reflective Journal</div>
+      <div class="hdr-tag">Facilitator</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="hdr-user-name" style="font-size:0.75rem;font-weight:800;text-transform:uppercase;color:var(--yellow);white-space:nowrap"></span>
+      <button class="btn-yellow btn-sm" onclick="openModal('m-create')">+ New Workshop</button>
+      <button class="btn-ghost btn-sm" onclick="signOutUser()">Sign Out</button>
+    </div>
+  </div>
+  <div class="body">
+    <h2 style="margin-bottom:20px">My Workshops</h2>
+    <div id="workshop-list"><div class="empty-state">No workshops yet. Create your first one!</div></div>
+  </div>
+</div>
+
+<!-- ── CONTROL ROOM ── -->
+<div class="screen" id="s-control">
+  <div class="hdr">
+    <div>
+      <div class="hdr-brand">Control Room</div>
+      <div class="hdr-tag" id="ctrl-workshop-name">–</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="font-size:0.75rem;font-weight:800;text-transform:uppercase;color:var(--yellow);white-space:nowrap" id="hdr-user-name-ctrl"></span>
+      <button class="btn-ghost btn-sm" onclick="leaveControlRoom()">← Workshops</button>
+    </div>
+  </div>
+  <div class="body">
+
+    <!-- Workshop Code + Join Link -->
+    <div class="code-display">
+      <div>
+        <div style="font-size:0.65rem;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Workshop Code</div>
+        <div class="code-big" id="ctrl-code">–</div>
+        <div class="code-url" id="ctrl-join-url">–</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn-ghost btn-sm" onclick="copyJoinUrl()">Copy Join URL</button>
+        <button class="btn-ghost btn-sm" onclick="copyCode()">Copy Code</button>
+      </div>
+    </div>
+
+    <!-- Live Stats -->
+    <div class="ctrl-row">
+      <div class="stat-box">
+        <div class="stat-value" id="stat-joined">0</div>
+        <div class="stat-label">Participants Joined</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="stat-submitted">0</div>
+        <div class="stat-label">Reflections Submitted</div>
+      </div>
+    </div>
+
+    <!-- Training Info -->
+    <div style="margin-bottom:24px">
+      <div class="section-title">Training Info</div>
+      <div style="background:var(--white);border:var(--border);padding:16px;box-shadow:var(--shadow)">
+        <label class="ti-label">Training Title</label>
+        <input type="text" id="ti-title" maxlength="80" placeholder="Training title" oninput="onInfoInput()">
+        <div style="display:flex;gap:12px">
+          <div style="flex:1"><label class="ti-label">No. of Pax</label>
+            <input type="text" id="ti-pax" inputmode="numeric" maxlength="4" placeholder="—" oninput="onInfoInput()"></div>
+          <div style="flex:1"><label class="ti-label">Duration (days)</label>
+            <input type="text" id="ti-duration" inputmode="decimal" maxlength="5" placeholder="—" oninput="onInfoInput()"></div>
+        </div>
+        <div style="display:flex;gap:12px">
+          <div style="flex:1"><label class="ti-label">Client</label>
+            <input type="text" id="ti-client" maxlength="80" placeholder="Optional" oninput="onInfoInput()"></div>
+          <div style="flex:1"><label class="ti-label">Venue</label>
+            <input type="text" id="ti-venue" maxlength="80" placeholder="Optional" oninput="onInfoInput()"></div>
+        </div>
+        <div class="ti-save" id="ti-save"></div>
+      </div>
+    </div>
+
+    <!-- Plan Table -->
+    <div style="margin-bottom:24px">
+      <div class="section-title">Reflection Plan
+        <span style="float:right;font-size:0.6rem;color:#888">Draft → Confirm → Live → Complete</span>
+      </div>
+      <div id="plan-rows"></div>
+      <button class="btn-ghost btn-sm" style="margin-top:4px" onclick="addRow()">+ Add Row</button>
+    </div>
+
+    <!-- Actions -->
+    <div style="margin-bottom:24px">
+      <div class="section-title">Session Actions</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <button class="btn-green" id="btn-unlock-summary" onclick="unlockSummary()">
+          ✨ Unlock Summary Generation
+        </button>
+        <button class="btn-pink" id="btn-end-session" onclick="confirmEndSession()">
+          End Session
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MODAL: Create Workshop ── -->
+<div class="overlay" id="m-create">
+  <div class="modal">
+    <h2>New Workshop</h2>
+    <p>Training details. A 6-character join code is generated automatically. Everything here is editable later.</p>
+    <input type="text" id="nw-title" placeholder="Training title *" maxlength="80" style="margin-top:16px">
+    <div style="display:flex;gap:12px">
+      <input type="text" id="nw-pax" inputmode="numeric" placeholder="No. of pax" maxlength="4" style="margin-top:12px">
+      <input type="text" id="nw-duration" inputmode="decimal" placeholder="Duration (days)" maxlength="5" style="margin-top:12px">
+    </div>
+    <input type="text" id="nw-client" placeholder="Client (optional)" maxlength="80" style="margin-top:12px">
+    <input type="text" id="nw-venue" placeholder="Venue (optional)" maxlength="80" style="margin-top:12px">
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="closeModal('m-create')">Cancel</button>
+      <button class="btn-primary" id="btn-create" onclick="createWorkshop()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Confirm End ── -->
+<div class="overlay" id="m-confirm-end">
+  <div class="modal">
+    <h2>End Session?</h2>
+    <p>This will close the session for all participants. Make sure they've generated their summaries first.</p>
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="closeModal('m-confirm-end')">Cancel</button>
+      <button class="btn-pink" onclick="endSession()">Yes, End Session</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div id="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {
+  getFirestore, doc, collection, addDoc, setDoc, getDocs,
+  onSnapshot, query, where, serverTimestamp, orderBy
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import {
+  getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+const firebaseConfig = {
+  apiKey:"AIzaSyDKon9lKqQbypo27FqS8KVDSqfxgr4ON0c",
+  authDomain:"learning-activities-kny.firebaseapp.com",
+  projectId:"learning-activities-kny",
+  storageBucket:"learning-activities-kny.firebasestorage.app",
+  messagingSenderId:"167106830334",
+  appId:"1:167106830334:web:e7441ec23ba33f7f4eaaaf",
+  measurementId:"G-C6WJYRYE1B"
+};
+
+const app      = initializeApp(firebaseConfig);
+const db       = getFirestore(app);
+const auth     = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+// ── STATE ──
+let uid              = null;
+let activeWorkshopId = null;
+let activeWorkshopData = null;
+let workshopUnsub    = null;
+let participantsUnsub = null;
+let responsesUnsub   = null;
+let activitiesUnsub  = null;
+let planRows         = [];
+let infoTimer        = null;
+let rowTimers        = {};
+
+const SAFE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+function makeCode(len = 6) {
+  return Array.from({ length: len }, () => SAFE_CHARS[Math.floor(Math.random() * SAFE_CHARS.length)]).join('');
+}
+
+// ── SCREEN ROUTING ──
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── AUTH ──
+const ADMIN_EMAIL = 'aknyz88@gmail.com';
+
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    window.location.href = '/facilitator/?redirect=' + encodeURIComponent(window.location.pathname);
+    return;
+  }
+
+  // Role check — must be facilitator or admin (custom claim set by syncRole function)
+  // Bootstrap fallback: admin email always passes (allows initial setup before role is set)
+  // Force-refresh token if no role claim yet — picks up syncRole changes without sign-out
+  let token = await user.getIdTokenResult();
+  if (!token.claims.role) token = await user.getIdTokenResult(true);
+  const role = token.claims.role;
+  const isFacilitator = role === 'facilitator' || role === 'admin' || user.email === ADMIN_EMAIL;
+
+  if (!isFacilitator) {
+    document.body.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;padding:24px;text-align:center;">
+        <div>
+          <h2 style="font-size:1.5rem;font-weight:900;margin-bottom:12px;">Access Denied</h2>
+          <p style="color:#666;margin-bottom:24px;">Your account doesn't have facilitator access.<br>Contact your admin to get access.</p>
+          <button onclick="import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js').then(m=>m.signOut(auth)).then(()=>location.href='/facilitator/')"
+            style="background:#000;color:#fff;border:none;padding:12px 28px;font-weight:800;cursor:pointer;">
+            Sign Out
+          </button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  uid = user.uid;
+  const displayName = user.displayName || user.email || '';
+  document.getElementById('hdr-user-name').textContent = displayName;
+  document.getElementById('hdr-user-name-ctrl').textContent = displayName;
+  loadWorkshops();
+  show('s-workshops');
+});
+
+window.signOutUser = async function () {
+  unsub();
+  await signOut(auth);
+  window.location.href = '/facilitator/';
+};
+
+// ── LOAD WORKSHOPS ──
+async function loadWorkshops() {
+  const q = query(
+    collection(db, 'workshops'),
+    where('facilitatorId', '==', uid),
+    orderBy('createdAt', 'desc')
+  );
+  const snap = await getDocs(q);
+  const list = document.getElementById('workshop-list');
+
+  if (snap.empty) {
+    list.innerHTML = '<div class="empty-state">No workshops yet. Create your first one!</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  snap.forEach(d => {
+    const w = d.data();
+    const statusClass = `status-${w.status || 'draft'}`;
+    const el = document.createElement('div');
+    el.className = 'workshop-card';
+    el.onclick = () => openControlRoom(d.id, w);
+    el.innerHTML = `
+      <div>
+        <div class="wcard-code">${w.code}</div>
+        <div class="wcard-name">${esc(w.name)}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="status-pill ${statusClass}">${w.status || 'draft'}</div>
+        <div class="wcard-meta" style="margin-top:8px">${w.status === 'live' ? 'Live now' : ''}</div>
+      </div>`;
+    list.appendChild(el);
+  });
+}
+
+// ── CREATE WORKSHOP ──
+window.createWorkshop = async function () {
+  const title = document.getElementById('nw-title').value.trim();
+  if (!title) { toast('Enter a training title', 'err'); return; }
+  const pax      = parseInt(document.getElementById('nw-pax').value) || null;
+  const duration = parseFloat(document.getElementById('nw-duration').value) || null;
+  const client   = document.getElementById('nw-client').value.trim();
+  const venue    = document.getElementById('nw-venue').value.trim();
+
+  const btn = document.getElementById('btn-create');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Creating…';
+
+  try {
+    // Generate unique code
+    let code = makeCode(6);
+    for (let i = 0; i < 10; i++) {
+      const q = query(collection(db, 'workshops'), where('code', '==', code));
+      const check = await getDocs(q);
+      if (check.empty) break;
+      code = makeCode(6);
+    }
+
+    const data = {
+      code, name: title, title,
+      pax, durationDays: duration, client, venue,
+      facilitatorId: uid, status: 'live', summaryUnlocked: false,
+      createdAt: serverTimestamp()
+    };
+    const docRef = await addDoc(collection(db, 'workshops'), data);
+
+    closeModal('m-create');
+    ['nw-title','nw-pax','nw-duration','nw-client','nw-venue'].forEach(i => document.getElementById(i).value = '');
+    toast('Workshop created! Code: ' + code, 'ok');
+    openControlRoom(docRef.id, data);
+
+  } catch (e) {
+    toast('Error: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create';
+  }
+};
+
+// ── OPEN CONTROL ROOM ──
+async function openControlRoom(workshopId, data) {
+  activeWorkshopId   = workshopId;
+  activeWorkshopData = data;
+  unsub();
+
+  document.getElementById('ctrl-workshop-name').textContent = data.title || data.name || '';
+  document.getElementById('ctrl-code').textContent = data.code;
+  document.getElementById('ctrl-join-url').textContent = `game.knywong.com/reflectivejournal`;
+  populateTrainingInfo(data);
+
+  const unlockBtn = document.getElementById('btn-unlock-summary');
+  if (data.summaryUnlocked) {
+    unlockBtn.textContent = '✓ Summary Generation Unlocked';
+    unlockBtn.disabled = true;
+    unlockBtn.style.background = '#ccc';
+  } else {
+    unlockBtn.textContent = '✨ Unlock Summary Generation';
+    unlockBtn.disabled = false;
+    unlockBtn.style.background = '';
+  }
+
+  show('s-control');
+  await loadPlanRows();
+  subscribeCounts(workshopId);
+
+  // Workshop doc — only for summaryUnlocked / status changes
+  workshopUnsub = onSnapshot(doc(db, 'workshops', workshopId), snap => {
+    if (!snap.exists()) return;
+    activeWorkshopData = snap.data();
+    if (activeWorkshopData.summaryUnlocked) {
+      unlockBtn.textContent = '✓ Summary Generation Unlocked';
+      unlockBtn.disabled = true;
+      unlockBtn.style.background = '#ccc';
+    }
+  });
+}
+
+// ── TRAINING INFO ──
+function populateTrainingInfo(d) {
+  document.getElementById('ti-title').value    = d.title || d.name || '';
+  document.getElementById('ti-pax').value      = d.pax || '';
+  document.getElementById('ti-duration').value = d.durationDays ?? d.durationMins ?? '';
+  document.getElementById('ti-client').value   = d.client || '';
+  document.getElementById('ti-venue').value    = d.venue || '';
+}
+
+window.onInfoInput = function () {
+  document.getElementById('ti-save').textContent = 'Saving…';
+  clearTimeout(infoTimer);
+  infoTimer = setTimeout(saveInfo, 600);
+};
+
+async function saveInfo() {
+  const title = document.getElementById('ti-title').value.trim();
+  const patch = {
+    title, name: title,
+    pax: parseInt(document.getElementById('ti-pax').value) || null,
+    durationDays: parseFloat(document.getElementById('ti-duration').value) || null,
+    client: document.getElementById('ti-client').value.trim(),
+    venue: document.getElementById('ti-venue').value.trim()
+  };
+  try {
+    await setDoc(doc(db, 'workshops', activeWorkshopId), patch, { merge: true });
+    document.getElementById('ctrl-workshop-name').textContent = title;
+    document.getElementById('ti-save').textContent = '✓ Saved';
+  } catch (e) {
+    document.getElementById('ti-save').textContent = 'Save failed';
+  }
+}
+
+// ── PLAN ROWS ──
+async function loadPlanRows() {
+  const snap = await getDocs(
+    query(collection(db, 'workshops', activeWorkshopId, 'activities'), orderBy('order', 'asc'))
+  );
+  planRows = snap.docs.map(d => {
+    const a = d.data();
+    return {
+      id: d.id,
+      topic: a.topic || '',
+      objective: a.objective || '',
+      prompt: a.prompt || '',
+      state: a.state || 'draft',
+      order: a.order ?? 0
+    };
+  });
+  if (planRows.length === 0) {
+    // Seed 3 starter draft rows
+    for (let i = 0; i < 3; i++) {
+      const ref = await addDoc(collection(db, 'workshops', activeWorkshopId, 'activities'), {
+        type: 'reflection', topic: '', objective: '', prompt: '',
+        state: 'draft', order: i, createdAt: serverTimestamp()
+      });
+      planRows.push({ id: ref.id, topic: '', objective: '', prompt: '', state: 'draft', order: i });
+    }
+  }
+  renderPlanRows();
+}
+
+function renderPlanRows() {
+  const c = document.getElementById('plan-rows');
+  c.innerHTML = '';
+  planRows.sort((a, b) => (a.order || 0) - (b.order || 0));
+  planRows.forEach((r, i) => {
+    const locked = r.state !== 'draft';
+    const el = document.createElement('div');
+    el.className = 'plan-row' + (locked ? ' locked' : '');
+    el.dataset.id = r.id;
+    el.innerHTML = `
+      <div class="plan-col">
+        <label>Topic / Module ${i + 1}</label>
+        <input type="text" value="${esc(r.topic)}" placeholder="e.g. Giving Feedback"
+          oninput="onRowInput('${r.id}','topic',this)" ${locked ? 'readonly' : ''}>
+        <label>Learning Objective</label>
+        <input type="text" value="${esc(r.objective)}" placeholder="What should they take away?"
+          oninput="onRowInput('${r.id}','objective',this)" ${locked ? 'readonly' : ''}>
+      </div>
+      <div class="plan-col">
+        <label>Reflective Question</label>
+        <textarea rows="4" placeholder="What will participants reflect on?"
+          oninput="onRowInput('${r.id}','prompt',this)" ${locked ? 'readonly' : ''}>${esc(r.prompt)}</textarea>
+      </div>
+      <div class="plan-col">
+        <span class="state-badge sb-${r.state}">${r.state}</span>
+        <div class="pr-actions">${rowActionsHtml(r)}</div>
+        <div class="pr-count" id="cnt-${r.id}"></div>
+      </div>`;
+    c.appendChild(el);
+  });
+  updateRowCounts();
+}
+
+function rowActionsHtml(r) {
+  if (r.state === 'draft')
+    return `<button class="btn-yellow" onclick="confirmRow('${r.id}')">Confirm</button>
+            <button class="pr-del" onclick="deleteRow('${r.id}')">Delete row</button>`;
+  if (r.state === 'confirmed')
+    return `<button class="btn-green" onclick="goLive('${r.id}')">Go Live</button>
+            <button class="btn-ghost" onclick="editRow('${r.id}')">Edit</button>`;
+  if (r.state === 'live')
+    return `<button class="btn-pink" onclick="completeRow('${r.id}')">Complete</button>`;
+  if (r.state === 'complete')
+    return `<button class="btn-ghost" onclick="reopenRow('${r.id}')">Re-open</button>`;
+  return '';
+}
+
+function rowById(id) { return planRows.find(r => r.id === id); }
+
+window.onRowInput = function (id, field, el) {
+  const r = rowById(id);
+  if (!r || r.state !== 'draft') return;
+  r[field] = el.value;
+  clearTimeout(rowTimers[id]);
+  rowTimers[id] = setTimeout(async () => {
+    try {
+      await setDoc(doc(db, 'workshops', activeWorkshopId, 'activities', id),
+        { [field]: el.value }, { merge: true });
+    } catch (e) { toast('Save failed', 'err'); }
+  }, 600);
+};
+
+async function setRowState(id, state) {
+  await setDoc(doc(db, 'workshops', activeWorkshopId, 'activities', id),
+    { state }, { merge: true });
+  rowById(id).state = state;
+  renderPlanRows();
+}
+
+window.confirmRow = async function (id) {
+  const r = rowById(id);
+  if (!r.topic.trim() || !r.prompt.trim()) {
+    toast('Topic and reflective question are required', 'err'); return;
+  }
+  await setRowState(id, 'confirmed');
+  toast('Row confirmed — ready to go live', 'ok');
+};
+
+window.editRow = async function (id) {
+  await setRowState(id, 'draft');
+};
+
+window.goLive = async function (id) {
+  await setRowState(id, 'live');
+  toast('Row is live — participants can answer it now', 'ok');
+};
+
+window.completeRow = async function (id) {
+  if (!confirm('Complete this row? Participants can no longer submit new answers to it.')) return;
+  await setRowState(id, 'complete');
+  toast('Row completed', 'ok');
+};
+
+window.reopenRow = async function (id) {
+  await setRowState(id, 'live');
+  toast('Row re-opened', 'ok');
+};
+
+window.deleteRow = async function (id) {
+  if (!confirm('Delete this row?')) return;
+  try {
+    const { deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+    await deleteDoc(doc(db, 'workshops', activeWorkshopId, 'activities', id));
+    planRows = planRows.filter(r => r.id !== id);
+    renderPlanRows();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+};
+
+window.addRow = async function () {
+  const order = planRows.length ? Math.max(...planRows.map(r => r.order || 0)) + 1 : 0;
+  try {
+    const ref = await addDoc(collection(db, 'workshops', activeWorkshopId, 'activities'), {
+      type: 'reflection', topic: '', objective: '', prompt: '',
+      state: 'draft', order, createdAt: serverTimestamp()
+    });
+    planRows.push({ id: ref.id, topic: '', objective: '', prompt: '', state: 'draft', order });
+    renderPlanRows();
+  } catch (e) { toast('Error: ' + e.message, 'err'); }
+};
+
+// ── LIVE COUNTS ──
+function subscribeCounts(workshopId) {
+  participantsUnsub = onSnapshot(
+    collection(db, 'workshops', workshopId, 'participants'),
+    snap => { document.getElementById('stat-joined').textContent = snap.size; }
+  );
+  responsesUnsub = onSnapshot(
+    query(collection(db, 'workshops', workshopId, 'responses'),
+      where('submitted', '==', true)),
+    snap => {
+      document.getElementById('stat-submitted').textContent = snap.size;
+      window._respByActivity = {};
+      snap.forEach(d => {
+        const a = d.data().activityId;
+        window._respByActivity[a] = (window._respByActivity[a] || 0) + 1;
+      });
+      updateRowCounts();
+    }
+  );
+}
+
+function updateRowCounts() {
+  const by = window._respByActivity || {};
+  planRows.forEach(r => {
+    const el = document.getElementById('cnt-' + r.id);
+    if (!el) return;
+    el.textContent = (r.state === 'live' || r.state === 'complete')
+      ? `${by[r.id] || 0} submitted` : '';
+  });
+}
+
+// ── UNLOCK SUMMARY ──
+window.unlockSummary = async function () {
+  const btn = document.getElementById('btn-unlock-summary');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Unlocking…';
+  try {
+    await setDoc(doc(db, 'workshops', activeWorkshopId), {
+      summaryUnlocked: true
+    }, { merge: true });
+    toast('Summary generation unlocked for all participants!', 'ok');
+    btn.textContent = '✓ Summary Generation Unlocked';
+    btn.style.background = '#ccc';
+  } catch (e) {
+    toast('Error: ' + e.message, 'err');
+    btn.disabled = false; btn.textContent = '✨ Unlock Summary Generation';
+  }
+};
+
+// ── END SESSION ──
+window.confirmEndSession = () => openModal('m-confirm-end');
+
+window.endSession = async function () {
+  try {
+    await setDoc(doc(db, 'workshops', activeWorkshopId), {
+      status: 'ended', endedAt: serverTimestamp()
+    }, { merge: true });
+    closeModal('m-confirm-end');
+    toast('Session ended', 'ok');
+    unsub();
+    show('s-workshops');
+    loadWorkshops();
+  } catch (e) {
+    toast('Error: ' + e.message, 'err');
+  }
+};
+
+// ── LEAVE CONTROL ROOM ──
+window.leaveControlRoom = function () {
+  unsub();
+  show('s-workshops');
+  loadWorkshops();
+};
+
+// ── HELPERS ──
+function unsub() {
+  [workshopUnsub, participantsUnsub, responsesUnsub, activitiesUnsub].forEach(fn => fn && fn());
+  workshopUnsub = participantsUnsub = responsesUnsub = activitiesUnsub = null;
+}
+
+window.copyCode = function () {
+  navigator.clipboard.writeText(document.getElementById('ctrl-code').textContent)
+    .then(() => toast('Code copied!', 'ok'));
+};
+
+window.copyJoinUrl = function () {
+  const code = document.getElementById('ctrl-code').textContent;
+  navigator.clipboard.writeText(`https://game.knywong.com/reflectivejournal`)
+    .then(() => toast('Join URL copied! (Share your code: ' + code + ')', 'ok'));
+};
+
+window.openModal  = id => document.getElementById(id).classList.add('open');
+window.closeModal = id => document.getElementById(id).classList.remove('open');
+
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); });
+});
+
+let toastTimer;
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = `toast up ${type || ''}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = 'toast'; }, 3500);
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Impact Bingo — Facilitator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --yellow: #FFFF00;
+  --pink: #FF00FF;
+  --cyan: #00FFFF;
+  --green: #00FF00;
+  --red: #FF3131;
+  --white: #FFFFFF;
+  --black: #000000;
+  --bg: #F0F0F0;
+  --border: 3px solid #000;
+  --shadow: 6px 6px 0px #000;
+  --radius: 0px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--black);
+  min-height: 100vh;
+  overflow-x: hidden;
+  padding-bottom: 60px;
+}
+
+/* LAYOUT */
+.app { display: none; flex-direction: column; min-height: 100vh; }
+.app.visible { display: flex; }
+
+.topbar {
+  background: var(--white);
+  border-bottom: var(--border);
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topbar-brand {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--black);
+  text-transform: uppercase;
+  letter-spacing: -1px;
+}
+
+.topbar-user { display: flex; align-items: center; gap: 16px; }
+.topbar-name { font-weight: 800; text-transform: uppercase; font-size: 0.8rem; }
+
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+h1 {
+  font-family: 'Unbounded', sans-serif;
+  font-size: clamp(2.2rem, 8vw, 4.5rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -3px;
+  line-height: 0.85;
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  font-size: 1rem;
+  font-weight: 800;
+  margin-bottom: 40px;
+  text-transform: uppercase;
+  background: var(--yellow);
+  display: inline-block;
+  padding: 6px 14px;
+  border: var(--border);
+  box-shadow: 4px 4px 0 #000;
+}
+
+/* TABS */
+.tabs { display: flex; gap: 10px; margin-bottom: 40px; flex-wrap: wrap; }
+.tab {
+  background: var(--white);
+  border: var(--border);
+  padding: 12px 24px;
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #000;
+  transition: all 0.1s;
+}
+.tab:hover { background: var(--pink); transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+.tab.active { background: var(--cyan); transform: translate(3px, 3px); box-shadow: 1px 1px 0 #000; }
+
+/* CARDS */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 32px; margin-bottom: 40px; }
+.sess-card {
+  background: var(--white);
+  border: var(--border);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.sess-card:hover { transform: translate(3px, 3px); box-shadow: 3px 3px 0 #000; }
+.sess-name { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 1.5rem; margin-bottom: 10px; text-transform: uppercase; line-height: 1; }
+.sess-meta { font-size: 0.85rem; font-weight: 800; margin-bottom: 6px; text-transform: uppercase; }
+.sess-actions { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+
+.badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border: 2px solid #000;
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.badge-active { background: var(--green); }
+.badge-draft { background: var(--yellow); }
+.badge-closed { background: var(--red); color: #fff; }
+
+/* FORMS */
+.form-section { background: var(--white); border: var(--border); padding: 32px; margin-bottom: 32px; box-shadow: var(--shadow); }
+.form-section h3 {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 900;
+  background: var(--black);
+  color: var(--white);
+  display: inline-block;
+  padding: 6px 16px;
+  margin-bottom: 24px;
+  text-transform: uppercase;
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+.form-row.full { grid-template-columns: 1fr; }
+.form-group { display: flex; flex-direction: column; gap: 8px; }
+label { font-size: 0.85rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; }
+input[type=text], input[type=number], input[type=password], select, textarea {
+  width: 100%;
+  padding: 14px;
+  background: var(--white);
+  border: var(--border);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  outline: none;
+  border-radius: 0;
+}
+input:focus, textarea:focus, select:focus { background: var(--yellow); }
+select option { background: var(--white); color: var(--black); }
+textarea { min-height: 100px; resize: vertical; }
+
+/* CRITERIA EDITOR */
+.criteria-list { display: flex; flex-direction: column; gap: 12px; }
+.criteria-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+.criteria-num { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 1rem; width: 32px; text-align: center; }
+.btn-icon { background: var(--white); border: 2px solid #000; padding: 8px 12px; cursor: pointer; box-shadow: 3px 3px 0 #000; transition: all 0.1s; }
+.btn-icon:hover { background: var(--red); color: #fff; transform: translate(1px, 1px); box-shadow: 2px 2px 0 #000; }
+.btn-icon:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+
+/* THEME PICKER */
+.picker-grid { display: grid; grid-template-columns: 280px 1fr; gap: 32px; }
+@media (max-width:760px) { .picker-grid { grid-template-columns: 1fr; } }
+.theme-picker { background: var(--white); border: var(--border); padding: 20px; box-shadow: 4px 4px 0 #000; }
+.theme-options { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; max-height: 600px; overflow-y: auto; padding-right: 8px; }
+.theme-option {
+  background: var(--white);
+  border: 2px solid #000;
+  padding: 12px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 3px 3px 0 #000;
+  transition: all 0.1s;
+  text-transform: uppercase;
+}
+.theme-option:hover { background: var(--cyan); transform: translate(1px, 1px); box-shadow: 2px 2px 0 #000; }
+.theme-option.used { background: #eee; text-decoration: line-through; cursor: not-allowed; box-shadow: none; transform: none; opacity: 0.6; }
+
+/* REFLECTION PICKER */
+.refl-picker { display: flex; flex-direction: column; gap: 10px; max-height: 340px; overflow-y: auto; padding-right: 8px; }
+.refl-option {
+  background: var(--white);
+  border: var(--border);
+  padding: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #000;
+  transition: all 0.1s;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+.refl-option:hover { background: var(--yellow); transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+.refl-option.selected { background: var(--green); transform: translate(3px, 3px); box-shadow: 1px 1px 0 #000; }
+.refl-selected-row {
+  background: var(--cyan);
+  border: var(--border);
+  padding: 14px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 4px 4px 0 #000;
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+/* BUTTONS */
+button {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  border: var(--border);
+  padding: 14px 28px;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #000;
+  transition: all 0.1s;
+  font-size: 0.9rem;
+  border-radius: 0;
+}
+button:hover:not(:disabled) { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+button:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0px 0px 0 #000; }
+button:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); box-shadow: none; transform: none; }
+
+.btn-primary { background: var(--pink); color: #000; }
+.btn-yellow { background: var(--yellow); color: #000; }
+.btn-ghost { background: var(--white); color: #000; }
+.btn-danger { background: var(--red); color: #fff; }
+.btn-green { background: var(--green); color: #000; }
+.btn-sm { padding: 10px 18px; font-size: 0.75rem; box-shadow: 3px 3px 0 #000; }
+.action-bar { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 32px; }
+
+
+/* ADMIN PANEL */
+.facilitator-row { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: var(--white); border: var(--border); margin-bottom: 16px; box-shadow: 6px 6px 0 #000; }
+.facilitator-info { display: flex; flex-direction: column; gap: 6px; }
+.facilitator-email { font-weight: 900; text-transform: uppercase; font-size: 0.9rem; }
+.facilitator-status { font-weight: 800; font-size: 0.8rem; text-transform: uppercase; }
+
+/* TABS */
+.tabs { display: flex; gap: 12px; margin-bottom: 40px; background: none; border-radius: 0; padding: 0; }
+.tab { flex: none; border-radius: 0; font-size: 0.9rem; font-weight: 900; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(120px);
+  background: var(--black); color: var(--white); padding: 16px 32px; border: var(--border); border-color: var(--white);
+  font-family: 'Unbounded', sans-serif; font-weight: 900; text-transform: uppercase; font-size: 1rem;
+  z-index: 3000; transition: transform 0.3s cubic-bezier(.34,1.56,.64,1); pointer-events: none;
+  box-shadow: 8px 8px 0 #000;
+}
+.toast.up { transform: translateX(-50%) translateY(0); }
+.toast.ok { background: var(--green); color: #000; border-color: #000; }
+.toast.err { background: var(--red); color: #fff; border-color: #000; }
+
+/* OVERLAYS & MODALS */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 1000; padding: 24px; }
+.overlay.open { display: flex; }
+.modal { background: var(--white); border: var(--border); padding: 48px; width: 100%; max-width: 600px; box-shadow: 20px 20px 0 #000; max-height: 90vh; overflow-y: auto; position: relative; border-radius: 0; }
+.modal h2 { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 2.2rem; text-transform: uppercase; line-height: 0.85; margin-bottom: 16px; letter-spacing: -2px; }
+.modal p { font-weight: 700; margin-bottom: 24px; line-height: 1.5; font-size: 1.1rem; }
+
+/* TABLE */
+.ledger-wrap { border: var(--border); background: var(--white); }
+table { width: 100%; border-collapse: collapse; }
+th { background: var(--black); color: var(--white); padding: 16px; font-family: 'Unbounded', sans-serif; font-size: 0.8rem; text-transform: uppercase; position: sticky; top: 0; text-align: left; }
+td { padding: 16px; border-bottom: 3px solid #000; font-weight: 900; font-size: 1rem; text-transform: uppercase; }
+tr:last-child td { border-bottom: none; }
+
+/* DELETE CONFIRM SPECIFIC */
+#deleteConfirmInput { border: 3px solid var(--red) !important; background: var(--white) !important; color: var(--black) !important; font-weight: 900 !important; font-size: 1.2rem !important; text-transform: uppercase; }
+
+@media(max-width:640px) {
+  .form-row { grid-template-columns: 1fr; gap: 16px; }
+  .criteria-row { grid-template-columns: auto 1fr auto; gap: 8px; }
+  .criteria-row input:nth-child(3) { grid-column: 2; }
+  h1 { font-size: 2.5rem; }
+  .modal { padding: 32px 24px; }
+}
+</style>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div class="app" id="mainApp">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:20px">
+      <a href="/facilitator/" style="font-family:'Unbounded',sans-serif;font-weight:900;font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:#888;text-decoration:none">← Dashboard</a>
+      <div class="topbar-brand">Impact Bingo</div>
+    </div>
+    <div class="topbar-user">
+      <span class="topbar-name" id="topbarName"></span>
+      <button class="btn-ghost btn-sm" onclick="signOut()">Sign Out</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('sessions')">My Sessions</button>
+      <button class="tab" onclick="switchTab('create')" id="createTabBtn">+ New Session</button>
+      <button class="tab" id="adminTab" style="display:none" onclick="switchTab('admin')">Admin</button>
+    </div>
+
+    <div id="tabSessions">
+      <h1>My Sessions</h1>
+      <p class="subtitle">Manage your Impact Bingo sessions.</p>
+      <div class="card-grid" id="sessionsList">
+        <p style="color:var(--text-muted)">Loading sessions…</p>
+      </div>
+    </div>
+
+    <div id="tabCreate" style="display:none">
+      <h1 id="formTitle">New Session</h1>
+      <p class="subtitle">Set up your Impact Bingo session.</p>
+
+      <div class="form-section">
+        <h3>Session Details</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Session Name</label>
+            <input type="text" id="fName" placeholder="e.g. Petronas Leadership Day">
+          </div>
+          <div class="form-group">
+            <label>Room Code (participants type this)</label>
+            <input type="text" id="fCode" placeholder="e.g. MAXIS26" style="text-transform:uppercase" maxlength="12">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Grid Size</label>
+            <select id="fGrid" onchange="updateCriteriaRows()">
+              <option value="3">3×3 (9 squares)</option>
+              <option value="4" selected>4×4 (16 squares)</option>
+              <option value="5">5×5 (25 squares)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Reflection Passcode (4 digits)</label>
+            <input type="text" id="fPasscode" placeholder="e.g. 2026" maxlength="4" inputmode="numeric">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3>Session Info</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="text" id="fDate" placeholder="e.g. 12 June 2026">
+          </div>
+          <div class="form-group">
+            <label>Venue</label>
+            <input type="text" id="fVenue" placeholder="e.g. Grand Hyatt KL, Ballroom A">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3>Criteria</h3>
+        <p style="color:var(--text-sec);font-size:.85rem;margin-bottom:16px" id="criteriaHint">Fill in 16 criteria for your 4×4 grid. Pick a theme on the left, then click any criteria to add it.</p>
+
+        <div class="picker-grid">
+          <div class="theme-picker">
+            <label style="margin-bottom:10px;display:block">Theme</label>
+            <select id="themeSelect" onchange="renderThemeOptions()">
+              <option value="bornWith">Born With</option>
+              <option value="recognition">Recognition</option>
+              <option value="skills">Skills</option>
+              <option value="hobbies">Hobbies</option>
+              <option value="achievement">Achievement</option>
+            </select>
+            <div class="theme-options" id="themeOptions"></div>
+          </div>
+
+          <div class="slot-list">
+            <label style="margin-bottom:10px;display:block">Selected (<span id="slotCount">0</span>/<span id="slotTotal">16</span>)</label>
+            <div style="display:grid;grid-template-columns:auto 1fr auto;gap:8px;margin-bottom:8px;padding:0 4px;">
+              <span style="width:24px"></span>
+              <span style="font-size:.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px">Full Criteria</span>
+              <span style="width:32px"></span>
+            </div>
+            <div class="criteria-list" id="criteriaList"></div>
+            <button class="btn-ghost btn-sm" onclick="addCustomRow()" style="margin-top:10px">+ Add Custom Criteria</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3>Reflection Questions</h3>
+        <p style="color:var(--text-sec);font-size:.85rem;margin-bottom:16px">Pick 2 questions shown to participants after completing their board.</p>
+
+        <div class="refl-picker" id="reflPicker"></div>
+
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--glass-border)">
+          <label style="margin-bottom:10px;display:block">Selected (<span id="reflCount">0</span>/2)</label>
+          <div id="selectedRefl"></div>
+        </div>
+      </div>
+
+      <div class="action-bar" id="actionBar">
+        <button class="btn-yellow" onclick="saveSession()">💾 Save Session</button>
+        <button class="btn-ghost btn-sm" onclick="switchTab('sessions')">Cancel</button>
+      </div>
+    </div>
+
+    <div id="tabAdmin" style="display:none">
+      <h1>Admin Panel</h1>
+      <p class="subtitle">Approve or reject facilitator accounts.</p>
+      <div id="facilitatorsList"><p style="color:var(--text-muted)">Loading…</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="oRecord">
+  <div class="modal" style="max-width:600px">
+    <h2>Player Records</h2>
+    <p>Manage participants in this session. Click column headers to sort.</p>
+    <div class="ledger-wrap" style="max-height:400px;overflow-y:auto;">
+      <table style="width:100%;text-align:left;">
+        <thead>
+          <tr>
+            <th class="sortable" style="cursor:pointer" onclick="sortRecord('nick')" title="Sort by Nickname">Nickname ↕</th>
+            <th class="sortable" style="cursor:pointer" onclick="sortRecord('balance')" title="Sort by Points">Pts ↕</th>
+            <th class="sortable" style="cursor:pointer" onclick="sortRecord('calcLines')" title="Sort by Lines">Lines ↕</th>
+            <th class="sortable" style="cursor:pointer" onclick="sortRecord('calcFinal')" title="Sort by Score">Score ↕</th>
+            <th class="sortable" style="cursor:pointer" onclick="sortRecord('unclaimed')" title="Sort by Unclaimed Pool">Unclaimed ↕</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="recordBody">
+          <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted)">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="btn-row-single" style="margin-top:16px; display:flex; gap:10px;">
+      <button class="btn-ghost" onclick="closeModal('oRecord')">Close</button>
+      <button class="btn-yellow" onclick="refreshRecord()">🔄 Refresh</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="oDeleteConfirm">
+  <div class="modal" style="max-width:400px;text-align:center;">
+    <h2 style="color:var(--red)">⚠️ Delete Session?</h2>
+    <p>This will permanently delete the session and wipe <strong>ALL</strong> player data, transactions, reflections, and selfies. This action cannot be undone.</p>
+    <p style="font-size:0.9rem;margin-top:10px;">Type <strong>DELETE</strong> below to confirm:</p>
+    <input type="text" id="deleteConfirmInput" placeholder="Type DELETE here" style="width:100%;margin:10px 0;padding:10px;text-align:center;border:1px solid var(--red);border-radius:4px;background:rgba(255,255,255,0.05);color:white;">
+    <div class="btn-row" style="display:flex;gap:10px;justify-content:center;margin-top:10px;">
+      <button class="btn-ghost" onclick="closeModal('oDeleteConfirm')">Cancel</button>
+      <button class="btn-danger" onclick="executeDeleteSession()">Yes, Delete Everything</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore,collection,doc,getDoc,getDocs,addDoc,setDoc,updateDoc,query,where,orderBy,serverTimestamp,deleteDoc }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getAuth,signInWithPopup,GoogleAuthProvider,signOut as fbSignOut,onAuthStateChanged }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getStorage, ref, deleteObject } 
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js';
+
+const firebaseConfig={
+  apiKey:"AIzaSyDKon9lKqQbypo27FqS8KVDSqfxgr4ON0c",
+  authDomain:"learning-activities-kny.firebaseapp.com",
+  projectId:"learning-activities-kny",
+  storageBucket:"learning-activities-kny.firebasestorage.app",
+  messagingSenderId:"167106830334",
+  appId:"1:167106830334:web:e7441ec23ba33f7f4eaaaf",
+  measurementId:"G-C6WJYRYE1B"
+};
+const ADMIN_EMAIL="aknyz88@gmail.com";
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+const auth=getAuth(app);
+const storage=getStorage(app);
+
+let currentUser=null,currentFacilitator=null,editingSessionId=null;
+let currentEditStatus='draft',currentEditPhase='lobby';
+
+function updateActionBar(){
+  const bar=document.getElementById('actionBar');
+  if(!bar) return;
+  if(!editingSessionId){
+    bar.innerHTML=`
+      <button class="btn-yellow" onclick="saveSession()">💾 Save Session</button>
+      <button class="btn-ghost btn-sm" onclick="switchTab('sessions')">Cancel</button>`;
+    return;
+  }
+  if(currentEditStatus==='closed'){
+    bar.innerHTML=`
+      <button class="btn-green" onclick="reopenSession()">🔓 Reopen Session</button>
+      <button class="btn-ghost btn-sm" onclick="switchTab('sessions')">← Back to Sessions</button>`;
+  } else if(currentEditStatus==='active' && currentEditPhase==='reflection'){
+    bar.innerHTML=`
+      <button class="btn-danger" onclick="closeSession()">⏹ End Session</button>
+      <button class="btn-ghost btn-sm" onclick="switchTab('sessions')">← Back</button>`;
+  } else if(currentEditStatus==='active' && currentEditPhase==='active'){
+    bar.innerHTML=`
+      <button class="btn-primary" onclick="openReflection()">🌟 Open Reflection</button>
+      <button class="btn-danger btn-sm" onclick="closeSession()">⏹ End Session</button>
+      <button class="btn-ghost btn-sm" onclick="switchTab('sessions')">← Back</button>`;
+  } else if(currentEditStatus==='active' && currentEditPhase==='lobby'){
+    bar.innerHTML=`
+      <button class="btn-primary" onclick="activateSession()">🚀 Start Game</button>
+      <button class="btn-yellow btn-sm" onclick="saveSession()">💾 Save Changes</button>
+      <button class="btn-ghost btn-sm" onclick="switchTab('sessions')">← Back</button>`;
+  } else {
+    // draft — saved
+    bar.innerHTML=`
+      <button class="btn-green" onclick="openLobbyEdit()">🚪 Open Lobby</button>
+      <button class="btn-yellow btn-sm" onclick="saveSession()">💾 Save Changes</button>
+      <button class="btn-ghost btn-sm" onclick="switchTab('sessions')">← Back</button>`;
+  }
+}
+
+// AUTH STATE
+onAuthStateChanged(auth,async user=>{
+  if(!user){
+    window.location.href='/facilitator/?redirect='+encodeURIComponent(window.location.pathname);
+    return;
+  }
+
+  // Role check — must be facilitator or admin (custom claim set by syncRole function)
+  // Bootstrap fallback: admin email always passes (allows initial setup before role is set)
+  // Force-refresh token if no role claim yet — picks up syncRole changes without sign-out
+  let token = await user.getIdTokenResult();
+  if (!token.claims.role) token = await user.getIdTokenResult(true);
+  const role = token.claims.role;
+  const isFacilitator = role === 'facilitator' || role === 'admin' || user.email === ADMIN_EMAIL;
+
+  if(!isFacilitator){
+    document.getElementById('mainApp').innerHTML=`
+      <div style="padding:60px 24px;text-align:center;font-family:'Plus Jakarta Sans',sans-serif;">
+        <h2 style="font-size:1.5rem;font-weight:900;margin-bottom:12px;">Access Denied</h2>
+        <p style="color:#666;margin-bottom:24px;">Your account doesn't have facilitator access.<br>Contact your admin to get access.</p>
+        <button onclick="window.fbSignOut && fbSignOut(auth).then(()=>location.href='/facilitator/')"
+          style="background:#000;color:#fff;border:none;padding:12px 28px;font-weight:800;cursor:pointer;">
+          Sign Out
+        </button>
+      </div>`;
+    document.getElementById('mainApp').style.display='block';
+    return;
+  }
+
+  currentUser=user;
+  document.getElementById('mainApp').classList.add('visible');
+  document.getElementById('topbarName').textContent=user.displayName||user.email;
+
+  // Show admin tab for admins and the bootstrap email
+  if(role === 'admin' || user.email === ADMIN_EMAIL){
+    document.getElementById('adminTab').style.display='';
+  }
+
+  loadSessions();
+  initCriteriaRows();
+  renderReflectionPicker();
+});
+
+window.signOut=async function(){
+  await fbSignOut(auth);
+  window.location.href='/facilitator/';
+};
+
+// TABS
+window.switchTab=function(tab, highlightTab = null){
+  const activeTab = highlightTab || tab;
+  ['Sessions','Create','Admin'].forEach(t=>{
+    const el=document.getElementById('tab'+t);
+    if(el) el.style.display='none';
+  });
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  
+  // Robustly find and activate the correct tab button
+  let tabBtn;
+  if(activeTab==='sessions') tabBtn = document.querySelector('.tab[onclick*="sessions"]');
+  else if(activeTab==='create') tabBtn = document.getElementById('createTabBtn');
+  else if(activeTab==='admin') tabBtn = document.getElementById('adminTab');
+  
+  if(tabBtn) tabBtn.classList.add('active');
+  else if(window.event?.target?.classList?.contains('tab')) window.event.target.classList.add('active');
+
+  const tabEl = document.getElementById('tab'+tab.charAt(0).toUpperCase()+tab.slice(1));
+  if(tabEl) tabEl.style.display='';
+
+  if(tab==='sessions') loadSessions();
+  if(tab==='admin') loadFacilitators();
+  
+  // State leakage fix: reset if explicitly clicking "+ New Session" OR if no session is being edited
+  if(tab==='create'){
+    const isNewTabClick = window.event && (window.event.target === document.getElementById('createTabBtn') || window.event.target.closest('#createTabBtn'));
+    if(isNewTabClick || !editingSessionId) {
+      resetForm();
+    }
+  }
+};
+
+// LOAD SESSIONS
+async function loadSessions(){
+  const container=document.getElementById('sessionsList');
+  container.innerHTML='<p style="color:var(--text-muted)">Loading…</p>';
+  try{
+    const q=currentUser.email===ADMIN_EMAIL
+      ? query(collection(db,'sessions'),orderBy('createdAt','desc'))
+      : query(collection(db,'sessions'),where('facilitatorId','==',currentUser.uid),orderBy('createdAt','desc'));
+    const snap=await getDocs(q);
+    if(snap.empty){ container.innerHTML='<p style="color:var(--text-muted)">No sessions yet. Create your first one!</p>'; return; }
+    container.innerHTML='';
+    snap.forEach(d=>{
+      const s=d.data();
+      const badgeClass=s.status==='active'?'badge-active':s.status==='closed'?'badge-closed':'badge-draft';
+      container.innerHTML+=`
+        <div class="sess-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+            <div class="sess-name">${esc(s.sessionName||'Untitled')}</div>
+            <span class="badge ${badgeClass}">${s.status||'draft'}</span>
+          </div>
+          <div class="sess-meta">🔑 Room Code: <strong>${s.roomCode||'—'}</strong></div>
+          <div class="sess-meta">📐 Grid: ${s.gridSize||4}×${s.gridSize||4}</div>
+          <div class="sess-meta">📅 ${s.date||''} ${s.venue?'· '+s.venue:''}</div>
+          <div class="sess-actions">
+            <button class="btn-ghost btn-sm" onclick="editSession('${d.id}')">✏️ Edit</button>
+            <a href="/impactbingo/dashboard?session=${d.id}" target="_blank"><button class="btn-ghost btn-sm">📊 Dashboard</button></a>
+            <button class="btn-ghost btn-sm" onclick="openRecord('${d.id}')">📋 Record</button>
+            ${s.status!=='active'&&s.status!=='closed'?`<button class="btn-green btn-sm" onclick="quickActivate('${d.id}')">🚀 Go Live</button>`:''}
+            ${s.status==='active'&&s.phase==='active'?`<button class="btn-primary btn-sm" onclick="quickReflect('${d.id}')">🌟 Reflection</button>`:''}
+            ${s.status==='active'&&s.phase==='active'?`<button class="btn-danger btn-sm" onclick="quickClose('${d.id}')">⏹ End</button>`:''}
+            ${s.status==='active'&&s.phase==='reflection'?`<button class="btn-danger btn-sm" onclick="quickClose('${d.id}')">⏹ End</button>`:''}
+            ${s.status==='closed'?`<button class="btn-green btn-sm" onclick="quickReopen('${d.id}')">🔓 Reopen</button>`:''}
+            <button class="btn-yellow btn-sm" onclick="exportCSV('${d.id}')">📥 Export</button>
+            <button class="btn-danger btn-sm" onclick="deleteSession('${d.id}')">🗑 Delete</button>
+          </div>
+        </div>
+      `;
+    });
+  }catch(e){ container.innerHTML='<p style="color:#ff8080">Error loading sessions: '+e.message+'</p>'; }
+}
+
+// ============================================================
+// CRITERIA & REFLECTION BANKS
+// ============================================================
+const CRITERIA_BANK = {
+  bornWith: {
+    label: 'Born With',
+    items: [
+      {criteria:'Naturally left-handed', shortLabel:'Left-handed'},
+      {criteria:'Born outside the city they currently work in', shortLabel:'Born out of city'},
+      {criteria:'Has a name with at least 2 of the same letter anywhere (e.g. Muhamad = M+m, Farizal = a+a)', shortLabel:'Repeated letter in name'},
+      {criteria:'Born as the eldest child in their family', shortLabel:'Eldest child'},
+      {criteria:'Has naturally curly hair', shortLabel:'Curly hair'},
+      {criteria:'Their Zodiac sign is Scorpio', shortLabel:'Scorpio'},
+      {criteria:'Has a birthmark', shortLabel:'Has a birthmark'},
+      {criteria:'Has a twin or is a triplet', shortLabel:'Twin/triplet'},
+      {criteria:'Was born in the same month as someone else in this room', shortLabel:'Same birth month'},
+      {criteria:'Has more than 3 siblings (including themselves)', shortLabel:'3+ siblings'},
+    ]
+  },
+  recognition: {
+    label: 'Recognition',
+    items: [
+      {criteria:'Known by peers as the "go-to person" in a crisis', shortLabel:'Go-to in crisis'},
+      {criteria:'Recognised for always making others feel included', shortLabel:'Makes others feel included'},
+      {criteria:'Voted most likely to stay calm under extreme pressure', shortLabel:'Calm under pressure'},
+      {criteria:'Colleagues say they light up every room they enter', shortLabel:'Lights up the room'},
+      {criteria:'Known as the person who always remembers birthdays and milestones', shortLabel:'Remembers everything'},
+      {criteria:'Recognised for bringing out the best in others', shortLabel:'Brings out the best'},
+      {criteria:'The person others nominate when someone needs to be cheered up', shortLabel:'The cheerer-upper'},
+      {criteria:'Known as the most punctual person in any meeting', shortLabel:'Most punctual'},
+      {criteria:'Peers describe them as "the glue" that holds the team together', shortLabel:'Team glue'},
+      {criteria:'Recognised for giving the most honest and useful feedback', shortLabel:'Best feedback giver'},
+    ]
+  },
+  skills: {
+    label: 'Skills',
+    items: [
+      {criteria:'Speaks 3 or more languages fluently', shortLabel:'Speaks 3+ languages'},
+      {criteria:'Can type with minimal error without looking at the keyboard', shortLabel:'Touch typist'},
+      {criteria:'Knows how to code or build a basic app', shortLabel:'Can code'},
+      {criteria:'Uses Generative AI to improve their daily work', shortLabel:'Uses GenAI daily'},
+      {criteria:'Certified in a professional skill outside their main job scope', shortLabel:'Cross-skill certified'},
+      {criteria:'Can read a financial statement and explain it clearly', shortLabel:'Reads financials'},
+      {criteria:'Has facilitated a workshop or training session before', shortLabel:'Has facilitated'},
+      {criteria:'Knows basic first aid or CPR', shortLabel:'First aid trained'},
+      {criteria:'Can design a presentation from scratch in under 30 minutes', shortLabel:'Fast deck builder'},
+      {criteria:'Has learned a new professional skill in the last 6 months', shortLabel:'Recently upskilled'},
+    ]
+  },
+  hobbies: {
+    label: 'Hobbies',
+    items: [
+      {criteria:'Has mastered a musical instrument', shortLabel:'Mastered instrument'},
+      {criteria:'Runs, cycles, or swims regularly for fitness', shortLabel:'Active in sport'},
+      {criteria:'Grows their own food or tends a garden', shortLabel:'Gardener'},
+      {criteria:'Volunteers regularly for a community or charity cause', shortLabel:'Regular volunteer'},
+      {criteria:'Writes blogs, journals, poetry, or fiction', shortLabel:'Writer'},
+      {criteria:'Travels to a new country at least twice a year', shortLabel:'Frequent traveller'},
+      {criteria:'Cooks dishes from at least 3 different cuisines', shortLabel:'Multi-cuisine cook'},
+      {criteria:'Practices a martial art or traditional sport', shortLabel:'Martial artist'},
+      {criteria:'Builds or creates things with their hands (woodwork, crafts, sewing)', shortLabel:'Makes things by hand'},
+      {criteria:'Has a side project or creative passion outside their 9-to-5', shortLabel:'Has a side project'},
+    ]
+  },
+  achievement: {
+    label: 'Achievement',
+    items: [
+      {criteria:'Delivered a project that had organisation-wide impact', shortLabel:'Org-wide impact'},
+      {criteria:'Successfully mentored someone into a leadership role', shortLabel:'Mentored a leader'},
+      {criteria:'Won a formal award or recognition at work', shortLabel:'Award winner'},
+      {criteria:'Started their own business or side hustle', shortLabel:'Entrepreneur'},
+      {criteria:'Gave a public speech or presentation to more than 100 people', shortLabel:'Spoke to 100+'},
+      {criteria:'Completed a degree, certification, or major qualification as an adult', shortLabel:'Adult learner'},
+      {criteria:'Solved a crisis under pressure with limited resources', shortLabel:'Crisis solver'},
+      {criteria:'Led a team through a major change or transformation', shortLabel:'Change leader'},
+      {criteria:'Raised funds or resources for a cause they believe in', shortLabel:'Fundraiser'},
+      {criteria:'Achieved a personal goal that most people said was impossible', shortLabel:'Beat the odds'},
+    ]
+  }
+};
+
+const REFLECTION_BANK = [
+  'What surprised you most about how others saw you during this game?',
+  'Which square was the hardest for you to sell — and what does that tell you?',
+  'What did you discover about your own value that you tend to underestimate?',
+  'When you were buying from others, what were you actually looking for?',
+  "Which person's story stayed with you the most — and why?",
+  'What would you do differently if you played this game again?',
+  'How does the way you played today reflect how you show up at work?',
+  'What is one thing about yourself you want others to recognise more?',
+  'Who in this room surprised you the most — and what did they teach you?',
+  'If you could carry one insight from today back to your team, what would it be?'
+];
+
+// State: selectedCriteria[i] = {criteria, shortLabel, theme} or null
+let selectedCriteria = [];
+let selectedReflection = [];
+
+// CRITERIA ROWS
+window.updateCriteriaRows=function(){
+  const size=parseInt(document.getElementById('fGrid').value);
+  const count=size*size;
+  document.getElementById('criteriaHint').textContent=`Fill in ${count} criteria for your ${size}×${size} grid. Pick a theme on the left, then click any criteria to add it.`;
+  document.getElementById('slotTotal').textContent=count;
+  // Trim or extend selectedCriteria array
+  if(selectedCriteria.length > count) selectedCriteria = selectedCriteria.slice(0, count);
+  while(selectedCriteria.length < count) selectedCriteria.push(null);
+  renderSlots();
+  renderThemeOptions();
+};
+
+function initCriteriaRows(count){
+  if(!count){ count=parseInt(document.getElementById('fGrid')?.value||4)**2; }
+  selectedCriteria = new Array(count).fill(null);
+  document.getElementById('slotTotal').textContent=count;
+  renderThemeOptions();
+  renderSlots();
+}
+
+// Render the theme options (left column)
+window.renderThemeOptions = function(){
+  const theme = document.getElementById('themeSelect').value;
+  const items = CRITERIA_BANK[theme].items;
+  const usedCriteria = new Set(selectedCriteria.filter(Boolean).map(c=>c.criteria));
+  const container = document.getElementById('themeOptions');
+  container.innerHTML = items.map((item,i)=>{
+    const used = usedCriteria.has(item.criteria);
+    return `<button class="theme-option ${used?'used':''}" onclick="addCriteriaToSlot('${theme}', ${i})" ${used?'disabled':''}>${esc(item.shortLabel)}</button>`;
+  }).join('');
+};
+
+// Add a criterion from bank to the first empty slot
+window.addCriteriaToSlot = function(theme, idx){
+  const item = CRITERIA_BANK[theme].items[idx];
+  const emptyIdx = selectedCriteria.findIndex(c=>!c);
+  if(emptyIdx === -1){ toast('All slots are filled. Remove one first.','err'); return; }
+  selectedCriteria[emptyIdx] = {criteria:item.criteria, theme:CRITERIA_BANK[theme].label};
+  renderSlots();
+  renderThemeOptions();
+};
+
+// Render selected slots (right column)
+function renderSlots(){
+  const list = document.getElementById('criteriaList');
+  if(!list) return;
+  list.innerHTML = selectedCriteria.map((c,i)=>{
+    if(c){
+      return `
+        <div class="criteria-row">
+          <div class="criteria-num">${i+1}</div>
+          <input type="text" class="c-criteria" value="${esc(c.criteria)}" placeholder="Full criteria">
+          <button class="btn-icon" onclick="removeSlot(${i})" title="Remove">✕</button>
+        </div>`;
+    } else {
+      return `
+        <div class="criteria-row" style="opacity:.5">
+          <div class="criteria-num">${i+1}</div>
+          <input type="text" class="c-criteria" placeholder="(empty — pick from theme)" disabled>
+          <button class="btn-icon" disabled style="visibility:hidden">✕</button>
+        </div>`;
+    }
+  }).join('');
+  // Wire up live edits to sync back into selectedCriteria
+  list.querySelectorAll('.criteria-row').forEach((row,i)=>{
+    const cInp = row.querySelector('.c-criteria');
+    if(cInp && !cInp.disabled){
+      cInp.addEventListener('input', e=>{ if(selectedCriteria[i]) selectedCriteria[i].criteria = e.target.value; });
+    }
+  });
+  document.getElementById('slotCount').textContent = selectedCriteria.filter(Boolean).length;
+}
+
+window.removeSlot = function(i){
+  selectedCriteria[i] = null;
+  renderSlots();
+  renderThemeOptions();
+};
+
+window.addCustomRow = function(){
+  const emptyIdx = selectedCriteria.findIndex(c=>!c);
+  if(emptyIdx === -1){ toast('All slots are filled','err'); return; }
+  selectedCriteria[emptyIdx] = {criteria:'', theme:'Custom'};
+  renderSlots();
+  // Focus the new row's criteria input
+  setTimeout(()=>{
+    const rows = document.querySelectorAll('.criteria-row');
+    rows[emptyIdx]?.querySelector('.c-criteria')?.focus();
+  }, 50);
+};
+
+// REFLECTION PICKER
+function renderReflectionPicker(){
+  const picker = document.getElementById('reflPicker');
+  if(!picker) return;
+  picker.innerHTML = REFLECTION_BANK.map((q,i)=>{
+    const selected = selectedReflection.includes(q);
+    const disabled = !selected && selectedReflection.length >= 2;
+    return `<div class="refl-option ${selected?'selected':''} ${disabled?'disabled':''}" onclick="toggleReflection(${i})">${esc(q)}</div>`;
+  }).join('');
+
+  // Render selected list
+  const sel = document.getElementById('selectedRefl');
+  if(selectedReflection.length === 0){
+    sel.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem">No questions selected yet.</p>';
+  } else {
+    sel.innerHTML = selectedReflection.map((q,i)=>`
+      <div class="refl-selected-row">
+        <div><strong style="color:var(--yellow)">Q${i+1}.</strong> ${esc(q)}</div>
+        <button class="btn-icon" onclick="toggleReflection(${REFLECTION_BANK.indexOf(q)})" title="Remove">✕</button>
+      </div>
+    `).join('');
+  }
+  document.getElementById('reflCount').textContent = selectedReflection.length;
+}
+
+window.toggleReflection = function(i){
+  const q = REFLECTION_BANK[i];
+  const idx = selectedReflection.indexOf(q);
+  if(idx >= 0){
+    selectedReflection.splice(idx, 1);
+  } else if(selectedReflection.length < 2){
+    selectedReflection.push(q);
+  }
+  renderReflectionPicker();
+};
+
+// SAVE SESSION
+window.saveSession=async function(){
+  const name=document.getElementById('fName').value.trim();
+  const code=document.getElementById('fCode').value.trim().toUpperCase();
+  const grid=parseInt(document.getElementById('fGrid').value);
+  const passcode=document.getElementById('fPasscode').value.trim();
+  const date=document.getElementById('fDate').value.trim();
+  const venue=document.getElementById('fVenue').value.trim();
+
+  if(!name||!code||!passcode){ toast('Fill in session name, room code, and passcode','err'); return; }
+  if(passcode.length!==4||isNaN(passcode)){ toast('Passcode must be exactly 4 digits','err'); return; }
+
+  // ROOM CODE UNIQUENESS CHECK — globally unique across all facilitators
+  try{
+    const dupQuery=query(collection(db,'sessions'),where('roomCode','==',code));
+    const dupSnap=await getDocs(dupQuery);
+    const conflict=dupSnap.docs.find(d=>d.id!==editingSessionId);
+    if(conflict){
+      const owner=conflict.data().facilitatorEmail||'another facilitator';
+      toast(`Room code "${code}" is already used by ${owner}. Pick a different code.`,'err');
+      return;
+    }
+  }catch(e){ console.warn('Uniqueness check failed:',e); }
+
+  // Build criteria from selectedCriteria state
+  const criteria=selectedCriteria
+    .map((c,i)=>c?{
+      id:i+1,
+      criteria:c.criteria.trim(),
+      theme:c.theme||'Custom'
+    }:null)
+    .filter(c=>c && c.criteria);
+
+  if(criteria.length!==grid*grid){
+    toast(`Need exactly ${grid*grid} criteria for ${grid}×${grid} grid. Currently have ${criteria.length}.`,'err');
+    return;
+  }
+
+  // Reflection questions check
+  if(selectedReflection.length!==2){
+    toast('Please pick exactly 2 reflection questions','err');
+    return;
+  }
+
+  const sessionData={
+    facilitatorId:currentUser.uid,
+    facilitatorEmail:currentUser.email,
+    sessionName:name, roomCode:code, gridSize:grid,
+    passcode, date, venue,
+    reflectionQuestions:[...selectedReflection],
+    status:editingSessionId?(await getDoc(doc(db,'sessions',editingSessionId))).data()?.status||'draft':'draft',
+    phase:editingSessionId?(await getDoc(doc(db,'sessions',editingSessionId))).data()?.phase||'lobby':'lobby',
+    createdAt:editingSessionId?undefined:serverTimestamp(),
+    updatedAt:serverTimestamp()
+  };
+  if(!sessionData.createdAt) delete sessionData.createdAt;
+
+  try{
+    let sid=editingSessionId;
+    if(sid){ await updateDoc(doc(db,'sessions',sid),sessionData); }
+    else { const ref2=await addDoc(collection(db,'sessions'),sessionData); sid=ref2.id; editingSessionId=sid; }
+
+    // Save criteria as subcollection
+    const batch=[];
+    for(const c of criteria){
+      batch.push(setDoc(doc(db,'sessions',sid,'criteria',String(c.id)),c));
+    }
+    await Promise.all(batch);
+
+    currentEditStatus=sessionData.status||'draft';
+    currentEditPhase=sessionData.phase||'lobby';
+    updateActionBar();
+    toast('Session saved!','ok');
+  }catch(e){ toast('Save failed: '+e.message,'err'); }
+};
+
+// ACTIVATE / CLOSE / DELETE
+window.openLobbyEdit=async function(){
+  if(!editingSessionId){ toast('Save first','err'); return; }
+  await updateDoc(doc(db,'sessions',editingSessionId),{status:'active',phase:'lobby',updatedAt:serverTimestamp()});
+  currentEditStatus='active'; currentEditPhase='lobby';
+  updateActionBar();
+  toast('Lobby open — players can now register','ok');
+};
+
+window.activateSession=async function(){
+  if(!editingSessionId){ toast('Save first','err'); return; }
+  await updateDoc(doc(db,'sessions',editingSessionId),{status:'active',phase:'active',updatedAt:serverTimestamp()});
+  currentEditStatus='active'; currentEditPhase='active';
+  updateActionBar();
+  toast('Session is now LIVE 🚀','ok');
+};
+
+window.closeSession=async function(){
+  if(!editingSessionId) return;
+  if(!confirm('End this session? Participants will no longer be able to join.')) return;
+  await updateDoc(doc(db,'sessions',editingSessionId),{status:'closed',phase:'reflection',updatedAt:serverTimestamp()});
+  currentEditStatus='closed'; currentEditPhase='reflection';
+  updateActionBar();
+  toast('Session ended — reflection is open for all participants','ok');
+};
+
+window.openReflection=async function(){
+  if(!editingSessionId){ toast('Save first','err'); return; }
+  await updateDoc(doc(db,'sessions',editingSessionId),{phase:'reflection',updatedAt:serverTimestamp()});
+  currentEditPhase='reflection';
+  updateActionBar();
+  toast('Reflection unlocked for all participants 🌟','ok');
+};
+
+window.reopenSession=async function(){
+  if(!editingSessionId) return;
+  if(!confirm('Reopen this session? Participants can trade again.')) return;
+  await updateDoc(doc(db,'sessions',editingSessionId),{status:'active',phase:'active',updatedAt:serverTimestamp()});
+  currentEditStatus='active'; currentEditPhase='active';
+  updateActionBar();
+  toast('Session reopened — game is live again 🚀','ok');
+};
+
+window.openLobby=async function(id){
+  await updateDoc(doc(db,'sessions',id),{status:'active',phase:'lobby',updatedAt:serverTimestamp()});
+  toast('Lobby open — players can now register','ok');
+  loadSessions();
+};
+
+window.quickActivate=async function(id){
+  await updateDoc(doc(db,'sessions',id),{status:'active',phase:'active',updatedAt:serverTimestamp()});
+  toast('Session is now LIVE 🚀','ok');
+  loadSessions();
+};
+
+window.quickClose=async function(id){
+  if(!confirm('End this session? Reflection will open for all participants.')) return;
+  await updateDoc(doc(db,'sessions',id),{status:'closed',phase:'reflection',updatedAt:serverTimestamp()});
+  toast('Session ended — reflection is now open','ok');
+  loadSessions();
+};
+
+window.quickReopen=async function(id){
+  if(!confirm('Reopen this session? Participants can trade again.')) return;
+  await updateDoc(doc(db,'sessions',id),{status:'active',phase:'active',updatedAt:serverTimestamp()});
+  toast('Session reopened — game is live again 🚀','ok');
+  loadSessions();
+};
+
+window.quickReflect=async function(id){
+  await updateDoc(doc(db,'sessions',id),{phase:'reflection',updatedAt:serverTimestamp()});
+  toast('Reflection unlocked for all participants 🌟','ok');
+  loadSessions();
+};
+
+let sessionToDelete = null;
+
+window.deleteSession = function(id) {
+  sessionToDelete = id;
+  const input = document.getElementById('deleteConfirmInput');
+  if (input) input.value = '';
+  openModal('oDeleteConfirm');
+};
+
+window.executeDeleteSession = async function() {
+  const confirmInput = document.getElementById('deleteConfirmInput');
+  if (!confirmInput || confirmInput.value !== 'DELETE') {
+    toast('Please type DELETE to confirm', 'err');
+    return;
+  }
+
+  const id = sessionToDelete;
+  if (!id) return;
+
+  // Guard: don't delete an active session with players mid-game
+  const sessCheck = await getDoc(doc(db, 'sessions', id));
+  if (sessCheck.exists() && sessCheck.data().status === 'active') {
+    toast('⚠️ End the session first before deleting', 'err');
+    closeModal('oDeleteConfirm');
+    return;
+  }
+
+  closeModal('oDeleteConfirm');
+  toast('Wiping session data...', 'ok');
+  try {
+    // 1. Delete selfies from Storage (by finding URLs in transactions)
+    const txSnap = await getDocs(collection(db, 'sessions', id, 'transactions'));
+    const deletePromises = [];
+    txSnap.forEach(docSnap => {
+      const url = docSnap.data().selfieUrl;
+      if (url) {
+        const imgRef = ref(storage, url);
+        deletePromises.push(deleteObject(imgRef).catch(e => console.warn('Storage delete fail (may already be gone):', e)));
+      }
+    });
+    await Promise.all(deletePromises);
+
+    // 2. Delete main subcollections (criteria, transactions, reflections)
+    const subcollections = ['criteria', 'transactions', 'reflections'];
+    for (const sub of subcollections) {
+      const snap = await getDocs(collection(db, 'sessions', id, sub));
+      for (const d of snap.docs) { await deleteDoc(d.ref); }
+    }
+
+    // 3. Delete users and their subcollections
+    const usersSnap = await getDocs(collection(db, 'sessions', id, 'users'));
+    for (const u of usersSnap.docs) {
+       const doneSnap = await getDocs(collection(db, 'sessions', id, 'users', u.id, 'done'));
+       for (const d of doneSnap.docs) { await deleteDoc(d.ref); }
+       await deleteDoc(u.ref);
+    }
+
+    // 4. Delete the main session document
+    await deleteDoc(doc(db, 'sessions', id));
+
+    toast('Session and all data wiped successfully 🗑', 'ok');
+    loadSessions();
+    sessionToDelete = null;
+  } catch(e) {
+    toast('Error deleting session: ' + e.message, 'err');
+  }
+};
+
+
+// ============================================================
+// RECORD / MANAGE PLAYERS
+// ============================================================
+let recordSessionId = null;
+let currentRecordData = [];
+let recordSort = { key: 'calcFinal', dir: -1 }; // -1 for descending, 1 for ascending
+
+window.openRecord = async function(id) {
+  recordSessionId = id;
+  openModal('oRecord');
+  await refreshRecord();
+};
+
+window.refreshRecord = async function() {
+  if (!recordSessionId) return;
+  const tbody = document.getElementById('recordBody');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted)">Loading players...</td></tr>';
+
+  try {
+    const [usersSnap, txSnap] = await Promise.all([
+      getDocs(collection(db, 'sessions', recordSessionId, 'users')),
+      getDocs(collection(db, 'sessions', recordSessionId, 'transactions'))
+    ]);
+
+    if (usersSnap.empty) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted)">No players joined yet.</td></tr>';
+      currentRecordData = [];
+      return;
+    }
+
+    // Build per-player unclaimed totals from BUY transactions where claimed=false
+    const unclaimedMap = {};
+    txSnap.forEach(d => {
+      const t = d.data();
+      if (t.action === 'BUY' && t.claimed === false && t.seller) {
+        unclaimedMap[t.seller] = (unclaimedMap[t.seller] || 0) + (t.amount || 0);
+      }
+    });
+
+    currentRecordData = usersSnap.docs.map(d => {
+      const data = d.data();
+      const calcLines = data.lines || 0;
+      const calcMult = calcLines * 0.3;
+      const calcFinal = Math.round((data.balance || 0) * calcMult);
+      const unclaimed = unclaimedMap[d.id] || 0;
+      return { nick: d.id, balance: data.balance || 0, calcLines, calcMult, calcFinal, unclaimed };
+    });
+
+    renderRecordTable();
+
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="color:#ff8080;text-align:center;">Error: ${e.message}</td></tr>`;
+  }
+};
+
+window.sortRecord = function(key) {
+  if (recordSort.key === key) {
+    recordSort.dir *= -1; // Toggle direction if same column clicked
+  } else {
+    recordSort.key = key;
+    recordSort.dir = -1;  // Default to descending when new column clicked
+  }
+  renderRecordTable();
+};
+
+function renderRecordTable() {
+  const tbody = document.getElementById('recordBody');
+  if (!currentRecordData.length) return;
+
+  // Apply Sorting
+  currentRecordData.sort((a, b) => {
+    const valA = a[recordSort.key];
+    const valB = b[recordSort.key];
+    
+    if (typeof valA === 'string') {
+      return valA.localeCompare(valB) * recordSort.dir;
+    }
+    return (valA - valB) * recordSort.dir;
+  });
+
+  // Render Table
+  tbody.innerHTML = currentRecordData.map(u => `
+    <tr>
+      <td style="font-weight:700;color:var(--yellow)">${esc(u.nick)}</td>
+      <td>${(u.balance||0).toLocaleString()}</td>
+      <td>${u.calcLines}</td>
+      <td>${u.calcFinal.toLocaleString()}</td>
+      <td style="${u.unclaimed>0?'color:var(--red);font-weight:900;':''}">${u.unclaimed>0?u.unclaimed.toLocaleString():'—'}</td>
+      <td>
+        <button class="btn-danger btn-sm" style="padding:4px 8px;font-size:0.7rem;" onclick="removePlayer('${esc(u.nick)}')">Remove</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+window.removePlayer = async function(nick) {
+  if (!confirm(`Remove ${nick}?\n\nThis deletes their score from the session leaderboard. (Their previous transactions will remain in the logs for auditing).`)) return;
+  
+  try {
+    await deleteDoc(doc(db, 'sessions', recordSessionId, 'users', nick));
+    toast(`Removed player: ${nick}`, 'ok');
+    refreshRecord(); // reload the table
+  } catch(e) {
+    toast(`Error removing player: ${e.message}`, 'err');
+  }
+};
+
+
+// ============================================================
+// CSV EXPORT (closed sessions only)
+// ============================================================
+window.exportCSV = async function(sessionId){
+  try{
+    toast('Generating CSV…','ok');
+
+    // Pull session, users, transactions, reflections
+    const sessSnap = await getDoc(doc(db,'sessions',sessionId));
+    if(!sessSnap.exists()){ toast('Session not found','err'); return; }
+    const sess = sessSnap.data();
+
+    const usersSnap = await getDocs(collection(db,'sessions',sessionId,'users'));
+    const txSnap = await getDocs(collection(db,'sessions',sessionId,'transactions'));
+    const reflSnap = await getDocs(collection(db,'sessions',sessionId,'reflections'));
+
+    const users = usersSnap.docs.map(d=>({nick:d.id,...d.data()}));
+    const txs = txSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const refls = {};
+    reflSnap.docs.forEach(d=>{ refls[d.id] = d.data(); });
+
+    // For each user — collect done count
+    const userDonePromises = users.map(async u=>{
+      const doneSnap = await getDocs(collection(db,'sessions',sessionId,'users',u.nick,'done'));
+      return {nick:u.nick, doneCount:doneSnap.size};
+    });
+    const userDones = await Promise.all(userDonePromises);
+    const doneMap = Object.fromEntries(userDones.map(d=>[d.nick,d.doneCount]));
+
+    // ===== Sheet 1: LEADERBOARD =====
+    const leaderboardRows = [
+      ['Rank','Nickname','Balance','Lines','Multiplier','Final Score','Squares Done','Reflection Submitted']
+    ];
+    const scored = users.map(u=>{
+      const lines = u.lines||0;
+      const mult = lines*0.3;
+      const final = Math.round((u.balance||0)*mult);
+      return {nick:u.nick, balance:u.balance||0, lines, mult, final, done:doneMap[u.nick]||0, refl:!!refls[u.nick]};
+    }).sort((a,b)=>b.final-a.final);
+    scored.forEach((u,i)=>{
+      leaderboardRows.push([i+1,u.nick,u.balance,u.lines,u.mult.toFixed(1),u.final,u.done,u.refl?'Yes':'No']);
+    });
+
+    // ===== Sheet 2: TRANSACTIONS =====
+    const txRows = [
+      ['Timestamp','Action','Buyer','Seller','Box ID','Criteria','Amount','Selfie URL']
+    ];
+    txs.sort((a,b)=>(a.timestamp?.seconds||0)-(b.timestamp?.seconds||0));
+    txs.forEach(t=>{
+      const ts = t.timestamp?.toDate?.()?.toISOString() || '';
+      txRows.push([ts,t.action||'',t.buyer||'',t.seller||'',t.boxId||'',t.criteria||'',t.amount||0,t.selfieUrl||'']);
+    });
+
+    // ===== Sheet 3: REFLECTIONS =====
+    const reflQs = sess.reflectionQuestions||[];
+    const reflHeader = ['Nickname','Final Score','Lines','Balance','Completed At'];
+    reflQs.forEach((q,i)=>{ reflHeader.push(`Q${i+1}: ${q}`); reflHeader.push(`A${i+1}`); });
+    reflHeader.push('AI Summary');
+    const reflRows = [reflHeader];
+    Object.entries(refls).forEach(([nick,r])=>{
+      const completedAt = r.completedAt?.toDate?.()?.toISOString() || '';
+      const row = [nick, r.finalScore||0, r.lines||0, r.balance||0, completedAt];
+      reflQs.forEach((q,i)=>{ row.push(q); row.push((r.answers||[])[i]||''); });
+      row.push(r.summary||'');
+      reflRows.push(row);
+    });
+
+    // Build combined CSV with section headers
+    const csvParts = [];
+    csvParts.push(`# Impact Bingo — ${sess.sessionName||''} (${sess.roomCode||''})`);
+    csvParts.push(`# Date: ${sess.date||''}  Venue: ${sess.venue||''}`);
+    csvParts.push(`# Exported: ${new Date().toISOString()}`);
+    csvParts.push('');
+    csvParts.push('### LEADERBOARD ###');
+    csvParts.push(...leaderboardRows.map(r=>r.map(csvCell).join(',')));
+    csvParts.push('');
+    csvParts.push('### TRANSACTIONS ###');
+    csvParts.push(...txRows.map(r=>r.map(csvCell).join(',')));
+    csvParts.push('');
+    csvParts.push('### REFLECTIONS ###');
+    csvParts.push(...reflRows.map(r=>r.map(csvCell).join(',')));
+
+    // Build Excel workbook — 3 separate sheets
+    const XLSX = window.XLSX;
+    if(!XLSX){ toast('Export library not loaded — refresh and try again','err'); return; }
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(leaderboardRows), 'Leaderboard');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(txRows),          'Transactions');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(reflRows),        'Reflections');
+    const safeName = (sess.sessionName||'session').replace(/[^a-zA-Z0-9-_]/g,'_');
+    XLSX.writeFile(wb, `impact-bingo_${safeName}_${sess.roomCode||'export'}.xlsx`);
+
+    toast('Excel downloaded ✓  —  3 sheets','ok');
+  }catch(e){
+    console.error('Export error:',e);
+    toast('Export failed: '+e.message,'err');
+  }
+};
+
+function csvCell(v){
+  if(v===null||v===undefined) return '';
+  const s = String(v);
+  if(/[",\n]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
+  return s;
+}
+
+// EDIT SESSION
+window.editSession=async function(id){
+  editingSessionId=id;
+  const snap=await getDoc(doc(db,'sessions',id));
+  if(!snap.exists()) return;
+  const s=snap.data();
+  document.getElementById('fName').value=s.sessionName||'';
+  document.getElementById('fCode').value=s.roomCode||'';
+  document.getElementById('fGrid').value=s.gridSize||4;
+  document.getElementById('fPasscode').value=s.passcode||'';
+  document.getElementById('fDate').value=s.date||'';
+  document.getElementById('fVenue').value=s.venue||'';
+
+  // Load reflection questions
+  selectedReflection = [...(s.reflectionQuestions||[])].slice(0,2);
+  renderReflectionPicker();
+
+  // Load criteria
+  const gridCount = (s.gridSize||4)**2;
+  selectedCriteria = new Array(gridCount).fill(null);
+  const critSnap=await getDocs(collection(db,'sessions',id,'criteria'));
+  const crits=critSnap.docs.map(d=>d.data()).sort((a,b)=>a.id-b.id);
+  crits.forEach((c,i)=>{
+    if(i < gridCount){
+      selectedCriteria[i] = {criteria:c.criteria||'', theme:c.theme||'Custom'};
+    }
+  });
+  document.getElementById('slotTotal').textContent=gridCount;
+  renderSlots();
+  renderThemeOptions();
+
+  document.getElementById('formTitle').textContent='Edit Session';
+  currentEditStatus=s.status||'draft';
+  currentEditPhase=s.phase||'lobby';
+  updateActionBar();
+  switchTab('create', 'sessions');
+};
+
+function resetForm(){
+  editingSessionId=null;
+  ['fName','fCode','fPasscode','fDate','fVenue'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  const gridEl = document.getElementById('fGrid');
+  if(gridEl) gridEl.value='4';
+
+  const themeEl = document.getElementById('themeSelect');
+  if(themeEl) themeEl.value='bornWith';
+
+  document.getElementById('formTitle').textContent='New Session';
+  currentEditStatus='draft'; currentEditPhase='lobby';
+  updateActionBar();
+  
+  selectedReflection = [];
+  initCriteriaRows(16);
+  renderReflectionPicker();
+
+  const hint = document.getElementById('criteriaHint');
+  if(hint) hint.textContent='Fill in 16 criteria for your 4×4 grid. Pick a theme on the left, then click any criteria to add it.';
+}
+
+// ADMIN
+async function loadFacilitators(){
+  const container=document.getElementById('facilitatorsList');
+  container.innerHTML='<p style="color:var(--text-muted)">Loading…</p>';
+  const snap=await getDocs(collection(db,'facilitators'));
+  if(snap.empty){ container.innerHTML='<p style="color:var(--text-muted)">No facilitators yet.</p>'; return; }
+  container.innerHTML='';
+  snap.forEach(d=>{
+    const f=d.data();
+    const statusColor=f.status==='approved'?'var(--green)':f.status==='pending'?'var(--yellow)':'#ff8080';
+    container.innerHTML+=`
+      <div class="facilitator-row">
+        <div class="facilitator-info">
+          <div class="facilitator-email">${esc(f.email||'')}</div>
+          <div class="facilitator-status" style="color:${statusColor}">${f.status||'pending'}</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          ${f.status!=='approved'?`<button class="btn-green btn-sm" onclick="approveFacilitator('${d.id}')">Approve</button>`:''}
+          ${f.status!=='rejected'?`<button class="btn-danger btn-sm" onclick="rejectFacilitator('${d.id}')">Reject</button>`:''}
+        </div>
+      </div>
+    `;
+  });
+}
+
+window.approveFacilitator=async function(uid){
+  await updateDoc(doc(db,'facilitators',uid),{status:'approved'});
+  toast('Facilitator approved ✓','ok');
+  loadFacilitators();
+};
+window.rejectFacilitator=async function(uid){
+  await updateDoc(doc(db,'facilitators',uid),{status:'rejected'});
+  toast('Facilitator rejected','ok');
+  loadFacilitators();
+};
+
+// HELPERS
+window.openModal = function(id){ document.getElementById(id).classList.add('open'); }
+window.closeModal = function(id){ document.getElementById(id).classList.remove('open'); }
+function show(id){ document.getElementById(id).style.display='flex'; }
+function hide(id){ document.getElementById(id).style.display='none'; }
+let toastT;
+function toast(msg,type){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className=`toast up ${type||''}`;
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>{ el.className='toast'; },3000);
+}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+</script>
+</body>
+</html>

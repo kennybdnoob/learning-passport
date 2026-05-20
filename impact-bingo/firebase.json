@@ -1,0 +1,18 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "hosting": {
+    "public": "public",
+    "cleanUrls": true,
+    "rewrites": [
+      { "source": "/impactbingo/facilitator", "destination": "/facilitator/index.html" },
+      { "source": "/impactbingo/facilitator/**", "destination": "/facilitator/index.html" },
+      { "source": "/impactbingo/dashboard", "destination": "/dashboard/index.html" },
+      { "source": "/impactbingo/dashboard/**", "destination": "/dashboard/index.html" },
+      { "source": "/impactbingo/**", "destination": "/index.html" },
+      { "source": "/impactbingo", "destination": "/index.html" }
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+# Build artifacts
+functions/lib/
+functions/.cache/
+
+# Assembled deploy target — built by scripts/deploy.cmd (xcopy from activity folders)
+# Keep the folder itself via .gitkeep; ignore everything inside
+public/**
+!public/.gitkeep
+
+# Firebase local state
+.firebase/
+
+# Dependencies
+node_modules/
+functions/node_modules/
+learning-passport/tests/node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment / secrets
+.env
+.env.local
+*.secret
+
+# Service account keys — NEVER commit private keys
+serviceAccountKey.json
+*serviceAccount*.json
+
+# Claude Code local settings (machine-specific)
+.claude/
+
+# Deploy script console output artifacts
+Assembling
+Building
+Deploying
+
+# OS
+.DS_Store
+Thumbs.db
