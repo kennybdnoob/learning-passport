@@ -80,6 +80,27 @@
   /* Push button */
   .push-btn{background:var(--gold-deep);color:#fff8e1;border:none;border-radius:10px;padding:9px 16px;font:600 13px 'Inter Tight';cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
   .push-btn:disabled{opacity:.55;cursor:default}
+
+  /* Activity catalog tiles */
+  .act-catalog{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+  .act-tile{border:1.5px solid var(--line);border-radius:12px;padding:14px;background:#faf5ea;transition:border-color .15s,background .15s}
+  .act-tile.act-tile-live{border-color:var(--good);background:#f4fbf5}
+  .act-tile-top{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
+  .act-tile-ic{width:42px;height:42px;border-radius:12px;background:var(--accent-soft);display:grid;place-items:center;font-size:22px;flex:none}
+  .act-tile-info{flex:1}
+  .act-tile-info b{font:700 14px 'Inter Tight';display:block;margin-bottom:3px}
+  .act-tile-info span{font-size:12px;color:var(--ink-soft);line-height:1.5}
+  .act-tile-foot{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .act-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+  .act-toggle input{display:none}
+  .act-tog-track{width:40px;height:22px;border-radius:11px;background:#ccc;position:relative;transition:background .2s;flex:none}
+  .act-tile-live .act-tog-track{background:var(--good)}
+  .act-tog-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .act-tile-live .act-tog-thumb{left:21px}
+  .act-tog-lbl{font:600 12px 'Inter Tight';color:var(--ink-soft)}
+  .act-tile-live .act-tog-lbl{color:var(--good)}
+  .act-manage-link{font:600 12px 'Inter Tight';color:var(--gold-deep);text-decoration:none;white-space:nowrap}
+  .act-manage-link:hover{text-decoration:underline}
   /* Manage item rows */
   .mgr-row{border:1.5px solid var(--line);border-radius:12px;padding:13px;margin-top:8px;background:#faf5ea;transition:border-color .15s}
   .mgr-row.is-live{border-color:var(--good);background:#f4fbf5}
@@ -740,57 +761,93 @@ function buildMgrResources(container, code, items){
 }
 
 // ── Activities ──
-function buildMgrActivities(container, code, items){
-  const sec=mkMgrSec('🎯 Activities','— click to toggle; push when ready','Activities');
-  const listEl=sec.querySelector('.mgr-list');
-  const addBtn=sec.querySelector('.add-sec-btn');
-  const pushBtn=sec.querySelector('.push-btn');
+// Activity catalog — add new games here as the platform grows.
+// participantUrl uses {code} as a placeholder for the course code.
+const ACTIVITY_CATALOG = [
+  {
+    id: 'impactbingo',
+    icon: '🎯',
+    name: 'Impact Bingo',
+    description: 'Human bingo — participants find peers who match each square, negotiate trades, and build their network score.',
+    participantUrl: '/impactbingo?code={code}',
+    facilitatorUrl: '/impactbingo/facilitator',
+  },
+  // More activities will appear here as they are added to the platform.
+];
 
-  function render(arr){
-    listEl.innerHTML='';
-    arr.forEach((a,i)=>{
-      const row=document.createElement('div');
-      row.className='mgr-row'; row.dataset.id=a.id||TS_ID();
-      row.innerHTML=`<div class="row-head">
-        <span class="row-n">Activity ${i+1}</span>
-        <div style="display:flex;gap:8px;align-items:center">
-          ${liveTog(a.live)}
-          <button type="button" class="rm">Remove</button>
-        </div></div>
-        <input class="al-name" placeholder="Activity name *" value="${escA(a.name)}">
-        <input class="al-desc" placeholder="Short description (optional)" value="${escA(a.description)}">
-        <input class="al-url" placeholder="URL" value="${escA(a.url)}">`;
-      row.querySelector('.rm').addEventListener('click',()=>render(collectAl().filter((_,j)=>j!==i)));
-      attachLiveToggle(row);
-      listEl.appendChild(row);
+function buildMgrActivities(container, code, items){
+  // Build a lookup: catalogId → current live state from Firestore
+  const savedMap = Object.fromEntries((items||[]).map(a=>[a.id, a.live]));
+
+  const sec = document.createElement('div');
+  sec.className = 'mgr-sec';
+  sec.innerHTML = `
+    <div class="mgr-sec-hd">
+      <div class="mgr-sec-hd-title">
+        <div style="font:700 13px 'Inter Tight';text-transform:uppercase;letter-spacing:.08em">🎯 Activities</div>
+        <div style="font-size:12px;color:var(--ink-soft);margin-top:2px">Toggle on, then push to make available to participants</div>
+      </div>
+      <button type="button" class="push-btn">🚀 Push Activities</button>
+    </div>
+    <div class="act-catalog"></div>`;
+
+  const catalogEl = sec.querySelector('.act-catalog');
+  const pushBtn   = sec.querySelector('.push-btn');
+
+  // Render each catalog tile
+  ACTIVITY_CATALOG.forEach(act => {
+    const isLive = savedMap[act.id] === true;
+    const tile = document.createElement('div');
+    tile.className = 'act-tile' + (isLive ? ' act-tile-live' : '');
+    tile.dataset.id = act.id;
+    tile.innerHTML = `
+      <div class="act-tile-top">
+        <div class="act-tile-ic">${act.icon}</div>
+        <div class="act-tile-info">
+          <b>${act.name}</b>
+          <span>${act.description}</span>
+        </div>
+      </div>
+      <div class="act-tile-foot">
+        <label class="act-toggle">
+          <input type="checkbox" class="item-live" ${isLive ? 'checked' : ''}>
+          <span class="act-tog-track"><span class="act-tog-thumb"></span></span>
+          <span class="act-tog-lbl">${isLive ? 'Live' : 'Off'}</span>
+        </label>
+        <a class="act-manage-link" href="${act.facilitatorUrl}" target="_blank" rel="noopener">
+          Manage game →
+        </a>
+      </div>`;
+
+    // Toggle live state on checkbox change
+    const cb = tile.querySelector('.item-live');
+    const lbl = tile.querySelector('.act-tog-lbl');
+    cb.addEventListener('change', () => {
+      tile.classList.toggle('act-tile-live', cb.checked);
+      lbl.textContent = cb.checked ? 'Live' : 'Off';
+    });
+
+    catalogEl.appendChild(tile);
+  });
+
+  // Collect current state for Firestore
+  function collectAl(){
+    return ACTIVITY_CATALOG.map(act => {
+      const tile = catalogEl.querySelector(`[data-id="${act.id}"]`);
+      const live = tile ? tile.querySelector('.item-live').checked : false;
+      return {
+        id: act.id,
+        type: act.id,
+        name: act.name,
+        description: act.description,
+        url: act.participantUrl.replace('{code}', code),
+        live,
+      };
     });
   }
 
-  function collectAl(){
-    return [...listEl.querySelectorAll('.mgr-row')].map(r=>({
-      id:r.dataset.id,
-      name:r.querySelector('.al-name').value.trim(),
-      description:r.querySelector('.al-desc').value.trim(),
-      url:r.querySelector('.al-url').value.trim(),
-      live:r.querySelector('.item-live').checked
-    })).filter(a=>a.name);
-  }
-
-  render(items);
-
-  addBtn.addEventListener('click',()=>{
-    const cur=[...listEl.querySelectorAll('.mgr-row')].map(r=>({
-      id:r.dataset.id,
-      name:r.querySelector('.al-name').value.trim(),
-      description:r.querySelector('.al-desc').value.trim(),
-      url:r.querySelector('.al-url').value.trim(),
-      live:r.querySelector('.item-live').checked
-    }));
-    render(cur.concat([{id:TS_ID(),name:'',description:'',url:'',live:false}]));
-  });
-
-  pushBtn.addEventListener('click',async()=>{
-    await pushSectionToFirestore(code,'activityLinks',collectAl(),pushBtn);
+  pushBtn.addEventListener('click', async () => {
+    await pushSectionToFirestore(code, 'activityLinks', collectAl(), pushBtn);
   });
 
   container.appendChild(sec);
