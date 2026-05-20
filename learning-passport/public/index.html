@@ -388,7 +388,8 @@ $('forgotLink').addEventListener('click', async () => {
 // drops the participant back where they were, not at the passport shelf.
 function saveNav(section) {
   if (S.passport) sessionStorage.setItem('lp_pid', S.passport.passportId);
-  if (section)    sessionStorage.setItem('lp_sec', section);
+  if (section) sessionStorage.setItem('lp_sec', section);
+  else         sessionStorage.removeItem('lp_sec'); // on passport home, clear section
 }
 function clearNav() {
   sessionStorage.removeItem('lp_pid');
@@ -766,10 +767,12 @@ async function openLeaderboard(){
 function resourceOpenUrl(rawUrl) {
   if (!rawUrl) return null;
   const u = rawUrl.toLowerCase().split('?')[0]; // strip query string for extension check
+  // These types render natively in the browser — open directly
   const direct = ['.jpg','.jpeg','.png','.gif','.webp','.svg',
-                  '.mp4','.webm','.mov','.ogg','.mp3','.wav'];
+                  '.mp4','.webm','.mov','.ogg','.mp3','.wav',
+                  '.html','.htm'];
   if (direct.some(ext => u.endsWith(ext))) return rawUrl;
-  // Everything else (pdf, docx, xlsx, pptx, txt…) → Google Docs Viewer
+  // Office docs, PDFs, etc. → Google Docs Viewer (opens as readable preview)
   return `https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}&embedded=false`;
 }
 
@@ -787,9 +790,9 @@ function resourceIcon(rawUrl) {
 }
 
 function openResources(){
+  saveNav('s-resources');
   const resources = ((S.course && S.course.resources) || []).filter(r => r.live !== false);
   show('s-resources');
-  saveNav();
   const list = $('resList');
   if (!resources.length){
     list.innerHTML = '<div class="empty">No resources available yet — check back during the workshop.</div>';
