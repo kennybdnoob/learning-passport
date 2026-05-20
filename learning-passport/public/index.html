@@ -310,7 +310,7 @@
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getFirestore, doc, getDoc, setDoc, getDocs, collection, query, where,
-  serverTimestamp, connectFirestoreEmulator }
+  serverTimestamp, onSnapshot, connectFirestoreEmulator }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
   onAuthStateChanged, signOut, sendPasswordResetEmail, connectAuthEmulator }
@@ -500,23 +500,51 @@ $('addBtn').addEventListener('click', async () => {
 });
 
 // ── PASSPORT HOME ──
+let _courseUnsub = null; // cancel previous course listener when switching passports
+
 async function openPassport(pid){
   const ps = await getDoc(doc(db,'passports',pid));
   if (!ps.exists()) { await renderShelf(); return; }
   S.passport = ps.data();
-  const cs = await getDoc(doc(db,'courses',S.passport.courseId));
-  S.course = cs.exists()? cs.data() : {};
-  const p=S.passport, c=S.course;
-  $('pcNo').textContent=p.passportNumber;
-  paintAvatar($('pcAv'), p.displayName);
-  $('pcName').textContent=p.displayName;
-  $('pcRole').textContent=p.position||'—';
-  $('pcCourse').textContent=p.courseName||c.name||p.workshopCode;
-  $('pcCohort').textContent=p.cohortName||c.cohortName||'—';
-  $('pcScore').textContent='★ '+(p.score||0)+' pts';
-  const prog = await journalProgress();
-  buildGrid((c.featureFlags)||{journal:true}, prog);
-  show('s-pass');
+
+  // Cancel any previous course listener before starting a new one
+  if (_courseUnsub) { _courseUnsub(); _courseUnsub = null; }
+
+  // Initial load — show passport home immediately, then keep listening for
+  // facilitator pushes (live questions, resources, activities, rewards)
+  let firstLoad = true;
+  _courseUnsub = onSnapshot(doc(db,'courses',S.passport.courseId), async (cs) => {
+    const prevLiveCount = Array.isArray(S.course?.journalQuestions)
+      ? S.course.journalQuestions.filter(q => q.live !== false).length : 0;
+
+    S.course = cs.exists() ? cs.data() : {};
+
+    if (firstLoad) {
+      firstLoad = false;
+      const p=S.passport, c=S.course;
+      $('pcNo').textContent=p.passportNumber;
+      paintAvatar($('pcAv'), p.displayName);
+      $('pcName').textContent=p.displayName;
+      $('pcRole').textContent=p.position||'—';
+      $('pcCourse').textContent=p.courseName||c.name||p.workshopCode;
+      $('pcCohort').textContent=p.cohortName||c.cohortName||'—';
+      $('pcScore').textContent='★ '+(p.score||0)+' pts';
+      const prog = await journalProgress();
+      buildGrid((c.featureFlags)||{journal:true}, prog);
+      show('s-pass');
+    } else {
+      // Facilitator pushed an update — silently refresh S.course and notify
+      const newLiveCount = Array.isArray(S.course.journalQuestions)
+        ? S.course.journalQuestions.filter(q => q.live !== false).length : 0;
+      if (newLiveCount > prevLiveCount) {
+        const pm = $('passMsg');
+        if (pm) { pm.className='msg ok'; pm.textContent='✍️ New journal questions are now available!'; }
+      }
+      // Refresh journal list if it's currently open so changes appear immediately
+      const sj = document.getElementById('s-jlist');
+      if (sj && sj.classList.contains('active')) openJournalList();
+    }
+  });
 }
 
 const DEFAULT_Q = 'What is one idea from today you will act on first — and why that one?';
